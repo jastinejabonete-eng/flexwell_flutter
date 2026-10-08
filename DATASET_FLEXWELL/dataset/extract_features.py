@@ -72,7 +72,9 @@ import numpy as np
 import pandas as pd
 from scipy.signal import find_peaks
 mp_pose = mp.solutions.pose
-DATASET_DIR = "dataset"
+# The exercise folders live beside this script. Resolve them from __file__ so
+# the script works whether it is launched from the project root or this folder.
+DATASET_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_CSV = "features.csv"
 L_SHOULDER, R_SHOULDER = 11, 12
 L_ELBOW, R_ELBOW = 13, 14
@@ -103,6 +105,12 @@ MIN_BASELINE_SCALE_FRACTION = 0.5
 VIDEO_BASELINE_SCALES = {}  # video_id -> baseline_scale, filled during extraction
 VIDEO_REST_VALUES = {}  # video_id -> feature_1 value before the first rep starts (diagnostic only,
                           # not used for training; helps set real UI phase-detection thresholds later)
+# Per-clip detection stats (diagnostic only, not used for training). Explains why
+# row counts differ across clips of the same exercise: a clip whose body leaves
+# the frame or whose landmarks drop below the visibility threshold loses rows,
+# which is the real cause of correct/incorrect ROW imbalance even when the
+# VIDEO counts are balanced. Written to detection_stats.csv in main().
+VIDEO_DETECTION_STATS = {}  # video_id -> dict(total_frames, detected_frames, rows, detection_pct)
 SIDE_VIEW_EXERCISES = {"Lunge", "Plank", "Side Plank"}
 FRONT_BACK_EXERCISES = {"Squat", "Push-Up", "Pull-Up"}  # = rep-based path (Squat/Push-Up are now left-side)
 # +1 exercises: a rep's peak is the MAXIMUM of vertical_displacement (moving
@@ -519,6 +527,11 @@ def process_video_front_back(path, exercise, label, pose, video_id):
         print(f"    WARNING: 0 reps detected even with relaxed thresholds -- clip is likely too "
               f"short/noisy for peak-finding as-is (usable post-calibration frames: "
               f"{len(displacements)}, signal amplitude: {amplitude:.3f}); inspect this clip manually")
+    VIDEO_DETECTION_STATS[video_id] = {
+        "exercise": exercise, "label": label,
+        "total_frames": total_frames, "detected_frames": detected_frames,
+        "rows": len(rows), "detection_pct": round(pct, 1),
+    }
     return rows
 def process_video_side_view(path, exercise, label, pose, video_id):
     cap, rotate_code = open_video(path)
@@ -551,6 +564,12 @@ def process_video_side_view(path, exercise, label, pose, video_id):
         pct = 100.0 * detected_frames / total_frames
         print(f"  {video_id}: pose detected in {detected_frames}/{total_frames} sampled frames ({pct:.0f}%), "
               f"{len(rows)} usable rows")
+    VIDEO_DETECTION_STATS[video_id] = {
+        "exercise": exercise, "label": label,
+        "total_frames": total_frames, "detected_frames": detected_frames,
+        "rows": len(rows),
+        "detection_pct": round(100.0 * detected_frames / total_frames, 1) if total_frames else 0.0,
+    }
     return rows
 def main():
     all_rows = []
@@ -589,6 +608,15 @@ def main():
         rest_df["exercise"] = rest_df["video_id"].str.split("/").str[0]
         rest_df["label"] = rest_df["video_id"].str.split("/").str[1]
         rest_df.to_csv("rest_values.csv", index=False)  # for setting real UI phase thresholds
+
+    # Per-clip detection stats (diagnostic only, not used for training).
+    if VIDEO_DETECTION_STATS:
+        stats_df = pd.DataFrame.from_dict(VIDEO_DETECTION_STATS, orient="index")
+        stats_df.index.name = "video_id"
+        stats_df.reset_index().to_csv("detection_stats.csv", index=False)
+        print(f"\nSaved per-clip detection stats to detection_stats.csv "
+              f"({len(stats_df)} clips) -- inspect this to see why row counts differ "
+              f"across clips of the same exercise (low detection_pct = frames dropped).")
 
     # Baseline-scale gate (front/back exercises only)
     scales = pd.Series(VIDEO_BASELINE_SCALES, name="baseline_scale")
