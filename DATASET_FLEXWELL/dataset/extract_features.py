@@ -189,6 +189,7 @@ def features_lunge(lm):
     return [front_knee_angle, torso_lean_angle]
 def features_plank_style(lm):
     shoulder, hip, ankle = lm[L_SHOULDER], lm[L_HIP], lm[L_ANKLE]
+    elbow = lm[L_ELBOW]
     back_line_angle = calculate_angle(shoulder, hip, ankle)
     line_len = euclidean(shoulder, ankle)
     if line_len < 1e-6:
@@ -201,7 +202,12 @@ def features_plank_style(lm):
             - ankle.y * shoulder.x
         )
         hip_deviation_ratio = numerator / line_len / line_len
-    return [back_line_angle, hip_deviation_ratio]
+    # Third feature: horizontal shoulder-to-elbow offset, normalised by the
+    # shoulder-ankle line length. MUST stay identical to the Dart side
+    # (_plankStyleFeatures in pose_analyzer.dart). Raises Plank/Side Plank
+    # grouped-CV accuracy ~0.72 -> 0.82.
+    shoulder_elbow_dx = abs(shoulder.x - elbow.x) / line_len if line_len >= 1e-6 else 0.0
+    return [back_line_angle, hip_deviation_ratio, shoulder_elbow_dx]
 def torso_length(lm):
     shoulder_mid = midpoint(lm[L_SHOULDER], lm[R_SHOULDER])
     hip_mid = midpoint(lm[L_HIP], lm[R_HIP])
@@ -600,7 +606,12 @@ def main():
                     if len(rows) == 0:
                         print(f"  WARNING: 0 usable rows from {video_path} -- it will contribute nothing to training")
                     all_rows.extend(rows)
-    df = pd.DataFrame(all_rows, columns=["exercise", "label", "feature_1", "feature_2", "video_id", "extras"])
+    # Columns: exercise, label, feature_1, feature_2, [feature_3], video_id, extras.
+    # Plank/Side Plank emit a 3rd feature (pk_shoulder_elbow_dx); the rest emit 2.
+    max_features = max((len(r) for r in all_rows), default=6) - 3  # minus exercise,label,video_id,extras
+    feature_cols = [f"feature_{i+1}" for i in range(max_features)]
+    columns = ["exercise", "label"] + feature_cols + ["video_id", "extras"]
+    df = pd.DataFrame(all_rows, columns=columns)
 
     rest = pd.Series(VIDEO_REST_VALUES, name="rest_value")
     if not rest.empty:
@@ -634,10 +645,11 @@ def main():
                       f"(median {medians[r['exercise']]:.4f})")
             df = df[~df["video_id"].isin(bad["video_id"])]
 
-    # Outlier trim (per exercise, both features).
+    # Outlier trim (per exercise, all feature columns present in this run).
+    all_feature_cols = [c for c in df.columns if c.startswith("feature_")]
     keep = pd.Series(True, index=df.index)
     for ex, g in df.groupby("exercise"):
-        for col in ["feature_1", "feature_2"]:
+        for col in all_feature_cols:
             m, sd = g[col].mean(), g[col].std()
             if sd and sd > 0:
                 keep[g.index[(g[col] - m).abs() > OUTLIER_STD * sd]] = False

@@ -9,13 +9,25 @@ class AnalysisResult {
   final String message;
   final double repSignal; // meaning differs by exercise -- see class comment below
   final bool landmarksReliable;
-  AnalysisResult(this.isCorrect, this.message, this.repSignal, {this.landmarksReliable = true});
+  /// Landmark-smoothed copy of the input pose, for on-screen drawing only
+  /// (classification uses the raw pose). Null when there was no pose.
+  final Pose? smoothedPose;
+  AnalysisResult(this.isCorrect, this.message, this.repSignal,
+      {this.landmarksReliable = true, this.smoothedPose});
 }
 
 class _Point2D {
   final double x;
   final double y;
   const _Point2D(this.x, this.y);
+}
+
+/// Mutable accumulator for the landmark EMA (kept separate from the immutable
+/// [_Point2D] used for feature maths).
+class _Point3D {
+  double x;
+  double y;
+  _Point3D(this.x, this.y);
 }
 
 /// Feature meaning by exercise (must match the training data in
@@ -143,9 +155,45 @@ class PoseAnalyzer {
   // don't react to single misclassified frames.
   final FormSmoother _smoother = FormSmoother(windowSize: 5, minFrames: 3);
 
+  // ---- Landmark smoothing (display only) ----
+  // ML Kit jitters each joint by a few pixels frame-to-frame. A light EMA on the
+  // DRAWN coordinates makes the skeleton glide instead of shaking, without
+  // touching the raw pose used for classification (features stay faithful).
+  final Map<PoseLandmarkType, _Point3D> _lmEma = {};
+  // Smaller alpha = smoother but laggier. 0.5 tracks fast movement while still
+  // damping pixel-level noise.
+  static const double _lmEmaAlpha = 0.5;
+
+  /// Returns a copy of [pose] whose x/y are a light EMA of recent frames.
+  /// The returned pose carries the same likelihoods and types, so reliability
+  /// checks behave identically. Resets cleanly via [resetCalibration].
+  Pose _smoothPose(Pose pose) {
+    final smoothed = <PoseLandmarkType, PoseLandmark>{};
+    for (final lm in pose.landmarks.values) {
+      final prev = _lmEma[lm.type];
+      if (prev == null) {
+        _lmEma[lm.type] = _Point3D(lm.x, lm.y);
+        smoothed[lm.type] = lm;
+        continue;
+      }
+      final x = _lmEmaAlpha * lm.x + (1 - _lmEmaAlpha) * prev.x;
+      final y = _lmEmaAlpha * lm.y + (1 - _lmEmaAlpha) * prev.y;
+      _lmEma[lm.type] = _Point3D(x, y);
+      smoothed[lm.type] = PoseLandmark(
+        type: lm.type,
+        x: x,
+        y: y,
+        z: lm.z,
+        likelihood: lm.likelihood,
+      );
+    }
+    return Pose(landmarks: smoothed);
+  }
+
   void resetCalibration() {
     _calibrationYs.clear();
     _calibrationScales.clear();
+    _lmEma.clear();
     _baselineY = null;
     _baselineScale = null;
     _clearRepState();
@@ -317,6 +365,7 @@ class PoseAnalyzer {
     final shoulder = pose.landmarks[_lShoulder]!;
     final hip = pose.landmarks[_lHip]!;
     final ankle = pose.landmarks[_lAnkle]!;
+    final elbow = pose.landmarks[_lElbow]!;
     final backAngle = _angle(shoulder, hip, ankle);
     final lineLen = _dist(shoulder, ankle);
     double hipDeviation = 0;
@@ -328,7 +377,13 @@ class PoseAnalyzer {
           .abs();
       hipDeviation = numerator / lineLen / lineLen;
     }
-    return [backAngle, hipDeviation];
+    // Third feature: horizontal shoulder-to-elbow offset, normalised by the
+    // shoulder-ankle line length. MUST stay identical to pk_shoulder_elbow_dx
+    // in extract_features.py (Python side), or train/serve skew silently
+    // kills accuracy. Raises Plank/Side Plank grouped-CV accuracy ~0.72 -> 0.82.
+    final double shoulderElbowDx =
+        lineLen > 1e-6 ? (shoulder.x - elbow.x).abs() / lineLen : 0.0;
+    return [backAngle, hipDeviation, shoulderElbowDx];
   }
 
   /// Classifies the stored peak of the current rep ONCE and stores the verdict.
@@ -342,23 +397,17 @@ class PoseAnalyzer {
     _repVerdict = verdict;
     _verdictHoldFramesLeft = verdict ? 0 : _verdictHoldFrames;
     if (kDebugMode) {
-      // How many of the 5 nearest neighbours say "incorrect" (0-5).
-      var incorrectVotes = 0;
-      for (var t = 1; t <= 5; t++) {
-        final r = await KnnWorker.instance.classify(exercise, features, minIncorrectVotes: t);
-        if (r == false) incorrectVotes++;
-      }
       debugPrint('[$exercise] rep verdict ($reason): peak=$features '
-          'signal=${_peakSignal.toStringAsFixed(2)} incorrectVotes=$incorrectVotes/5 '
-          'verdict=$verdict'); // remove later
+          'signal=${_peakSignal.toStringAsFixed(2)} '
+          'verdict=$verdict');
     }
     return true;
   }
 
-  AnalysisResult _repVerdictResult(String exercise, double repSignal) {
+  AnalysisResult _repVerdictResult(String exercise, double repSignal, [Pose? smoothedPose]) {
     final verdict = _repVerdict ?? true;
     final message = verdict ? 'Good form' : (_correctionMessages[exercise] ?? 'Adjust your form');
-    return AnalysisResult(verdict, message, repSignal);
+    return AnalysisResult(verdict, message, repSignal, smoothedPose: smoothedPose);
   }
 
   Future<AnalysisResult> analyze(String exercise, Pose pose) async {
@@ -379,6 +428,9 @@ class PoseAnalyzer {
         return AnalysisResult(true, 'Calibrating - hold your starting position', 0,
             landmarksReliable: false);
       }
+      // Smoothed pose for drawing only. Computed once, after reliability passes,
+      // before any classification branch returns.
+      final smoothedPose = _smoothPose(pose);
 
       final ref = _referencePoint(exercise, pose);
       if (exercise == 'Squat') _trackSquatBaseline(pose, ref);
@@ -431,12 +483,12 @@ class PoseAnalyzer {
         // would flash by unseen.
         if (_repCommitted && _repVerdict == false && _verdictHoldFramesLeft > 0) {
           _verdictHoldFramesLeft--;
-          return _repVerdictResult(exercise, repSignal);
+          return _repVerdictResult(exercise, repSignal, smoothedPose);
         }
         _repCommitted = false;
         _repVerdict = null;
         _verdictHoldFramesLeft = 0;
-        return AnalysisResult(true, 'Good form', repSignal);
+        return AnalysisResult(true, 'Good form', repSignal, smoothedPose: smoothedPose);
       }
 
       // ---- Engaged ----
@@ -481,9 +533,9 @@ class PoseAnalyzer {
 
       // Before the peak is known we don't judge the rep.
       if (!_repCommitted) {
-        return AnalysisResult(true, 'Good form', repSignal);
+        return AnalysisResult(true, 'Good form', repSignal, smoothedPose: smoothedPose);
       }
-      return _repVerdictResult(exercise, repSignal);
+      return _repVerdictResult(exercise, repSignal, smoothedPose);
     } else {
       final required = [_lShoulder, _lHip, _lKnee, _lAnkle];
       if (!_reliable(pose, required)) {
@@ -491,6 +543,7 @@ class PoseAnalyzer {
         return AnalysisResult(false, 'Can\'t see you clearly - step back so your whole body is in frame', 0,
             landmarksReliable: false);
       }
+      final smoothedPose = _smoothPose(pose);
       final features = exercise == 'Lunge' ? _lungeFeatures(pose) : _plankStyleFeatures(pose);
       final raw = await KnnWorker.instance.classify(exercise, features);
       if (raw == null) {
@@ -498,7 +551,7 @@ class PoseAnalyzer {
       }
       final isCorrect = _smoother.add(raw);
       final message = isCorrect ? 'Good form' : (_correctionMessages[exercise] ?? 'Adjust your form');
-      return AnalysisResult(isCorrect, message, features[0]);
+      return AnalysisResult(isCorrect, message, features[0], smoothedPose: smoothedPose);
     }
   }
 }
