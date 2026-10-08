@@ -1,0 +1,10 @@
+# Copy this file to android/key.properties and fill in your upload keystore values.
+# key.properties is git-ignored — NEVER commit the real one.
+#
+# Generate an upload keystore (do this ONCE, back up the .jks + passwords):
+#   keytool -genkey -v -keystore ~/flexwell-upload.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias flexwell
+storeFile=C:/Users/Janelyn/flexwell-upload.jks
+storePassword=CHANGE_ME
+keyAlias=flexwell
+keyPassword=CHANGE_ME
