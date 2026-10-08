@@ -95,21 +95,11 @@ class PoseAnalyzer {
   // point isn't mistaken for the bottom of the rep.
   static const double _dwellMinPeak = 0.30;
 
-  // Push-Up (KNN, k=5): a rep is flagged incorrect only when at least this many
-  // of the 5 nearest training examples are "incorrect" (a plain majority is 3).
-  // The Push-Up model is weak and the live camera framing sits in a sparse,
-  // mixed-label region of the training data, so a plain majority flags too many
-  // good reps. Raise toward 5 for fewer red verdicts, lower toward 3 to be
-  // stricter. Use a null threshold at the call site for a plain majority.
-  static const int _pushUpMinIncorrectVotes = 4;
-
-  // Squat (KNN, k=5): a rep is flagged incorrect when at least this many of the
-  // 5 nearest training examples are "incorrect". A plain majority (3) lets a
-  // bad squat through whenever most of its neighbours are labelled correct, so
-  // the skeleton stays green. 2 = stricter, 3 = plain majority, 1 = strictest.
-  // Check the "[Squat] rep verdict" debug line (it prints the vote count) and
-  // tune this against a few deliberately bad reps.
-  static const int _squatMinIncorrectVotes = 2;
+  // Rep classification uses a plain k=5 majority vote (no hand-tuned
+  // incorrect-vote threshold). The earlier per-exercise thresholds were
+  // masking thin training data; if you want to revisit them, do it only
+  // after re-extracting with more Squat/Push-Up clips, and verify with the
+  // "[exercise] rep verdict" debug line (it prints the neighbour vote count).
 
   // Classifier features of the frame where feature_1 was lowest so far in the
   // rep in progress (this matches how training rows were picked).
@@ -341,22 +331,12 @@ class PoseAnalyzer {
     return [backAngle, hipDeviation];
   }
 
-  static int? _minIncorrectVotesFor(String exercise) {
-    if (exercise == 'Push-Up') return _pushUpMinIncorrectVotes;
-    if (exercise == 'Squat') return _squatMinIncorrectVotes;
-    return null; // plain majority
-  }
-
   /// Classifies the stored peak of the current rep ONCE and stores the verdict.
   /// Returns false (and commits nothing) if the model can't give a verdict.
   Future<bool> _commitRepVerdict(String exercise, String reason) async {
     final features = _peakFeatures;
     if (features == null) return false;
-    final verdict = await KnnWorker.instance.classify(
-      exercise,
-      features,
-      minIncorrectVotes: _minIncorrectVotesFor(exercise),
-    );
+    final verdict = await KnnWorker.instance.classify(exercise, features);
     if (verdict == null) return false;
     _repCommitted = true;
     _repVerdict = verdict;
