@@ -122,7 +122,7 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
                                 imageAsset,
                                 fit: BoxFit.cover,
                                 // Missing/corrupt image: fall back to a flat colour.
-                                errorBuilder: (_, __, ___) =>
+                                errorBuilder: (_, _, _) =>
                                     Container(color: Colors.blueGrey.shade800),
                               )
                             : Container(color: Colors.blueGrey.shade800),
