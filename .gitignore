@@ -62,3 +62,12 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# DATASET_FLEXWELL: track ML code + model + CSVs, NOT the multi-GB videos
+DATASET_FLEXWELL/dataset/**/*.mov
+DATASET_FLEXWELL/dataset/**/*.MOV
+DATASET_FLEXWELL/dataset/**/*.mp4
+DATASET_FLEXWELL/dataset/**/*.MP4
+DATASET_FLEXWELL/Dataset Exercise Quality-wise/
+DATASET_FLEXWELL/Dataset Exercise Quality-wise.zip
+DATASET_FLEXWELL/**/__pycache__/
