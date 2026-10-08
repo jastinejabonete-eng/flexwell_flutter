@@ -32,6 +32,9 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+# Android's own Gradle build dir (separate from the top-level /build/)
+android/build/
+android/.gradle/
 
 # Stray JDK/tool installs accidentally unzipped into the project (keep OUT of git)
 lib/oracleJdk-*/
