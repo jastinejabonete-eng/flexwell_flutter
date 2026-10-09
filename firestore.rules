@@ -1,0 +1,64 @@
+rules_version = '2';
+
+// FlexWell Firestore security rules.
+//
+// The mobile app signs in ANONYMOUSLY and only ever touches its own
+// users/{uid} subtree. The web admin dashboard signs in as a real
+// Email/Password user (FLEXWELL_ADMIN_EMAIL) and must read/write the GLOBAL
+// achievements catalog plus EVERY user's sessions/unlocked_achievements.
+//
+// Keep this email in sync with FLEXWELL_ADMIN_EMAIL in the dashboard .env.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // The one admin account allowed to manage everything.
+    function isAdmin() {
+      return isSignedIn()
+        && request.auth.token.email.lower() == 'jastinejabonete@gmail.com';
+    }
+
+    // A user may only touch their own users/{uid} subtree.
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // ---- Global achievement catalog (managed by the admin dashboard) ----
+    match /achievements/{achievementId} {
+      // The app reads the catalog to show available badges; anyone signed in
+      // may read it. Only the admin may write.
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ---- Per-user data ----
+    match /users/{userId} {
+      // Owner reads/writes their own doc subtree; the admin may read/write any.
+      allow read, write: if isOwner(userId) || isAdmin();
+
+      match /sessions/{sessionId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+
+      match /unlocked_achievements/{achievementId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    // The admin dashboard runs a collection-group query over every user's
+    // unlocked_achievements. Collection-group rules are declared separately
+    // from the per-user match above, and only the admin needs collection-group
+    // access (the app only ever queries its own subtree).
+    match /{path=**}/unlocked_achievements/{achievementId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Deny everything else by default.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

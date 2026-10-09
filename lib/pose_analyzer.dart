@@ -156,11 +156,12 @@ class PoseAnalyzer {
         return null;
       case 'Pull-Up':
         // Hanging under the bar: shoulders below hips. If shoulders are ABOVE
-        // hips the user is standing on the ground, not hanging.
-        final s = l[_lShoulder];
-        final h = l[_lHip];
-        if (s == null || h == null) return null;
-        if ((h.y - s.y) < 0.02) {
+        // hips the user is standing on the ground, not hanging. (Distinct local
+        // names: Dart switch cases share one scope, so 's'/'h' are taken.)
+        final ps = l[_lShoulder];
+        final ph = l[_lHip];
+        if (ps == null || ph == null) return null;
+        if ((ph.y - ps.y) < 0.02) {
           return 'Hang from the bar with your arms straight to start';
         }
         return null;
