@@ -341,6 +341,26 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
         final pose = poses.first;
         final analysis = await _poseAnalyzer.analyze(widget.exercise, pose);
         if (!mounted || _isEnding) return; // state may have changed during the await
+
+        // Start-position gate: if the user clearly isn't in this exercise's
+        // required starting position (wrong side, standing when they should be
+        // prone, not hanging, etc.), show an orange skeleton with the reason
+        // instead of a misleading green/red form verdict. This runs before any
+        // form judging so it overrides everything while not ready.
+        final notReady = PoseAnalyzer.checkStartPosition(widget.exercise, pose);
+        if (notReady != null) {
+          final previous = _overlay.value;
+          _overlay.value = _OverlayState(
+            pose: analysis.smoothedPose ?? pose,
+            imageSize: displaySize,
+            isCorrect: previous.isCorrect,
+            landmarksOk: true, // keep drawing the skeleton...
+            showNeutral: true, // ...but orange, with the position message
+            guideText: notReady,
+          );
+          return; // finally block resets _isBusy and updates the frame skip
+        }
+
         if (kDebugMode) {
           debugPrint('[perf] mlkit=${mlMs}ms total=${sw.elapsedMilliseconds}ms');
         }
@@ -680,11 +700,12 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
               valueListenable: _overlay,
               builder: (context, o, _) => CustomPaint(
                 painter: PosePainter(
-                  // No skeleton while the analyzer can't judge form yet
-                  // (calibrating, landmarks unreliable, model unavailable).
+                  // Draw the skeleton whenever we have a good pose. It turns
+                  // orange (isNeutral) while calibrating / unreliable / not in
+                  // the start position, so the user always sees their body.
                   pose: o.landmarksOk ? o.pose : null,
                   isCorrect: o.isCorrect,
-                  isNeutral: !o.landmarksOk,
+                  isNeutral: !o.landmarksOk || o.showNeutral,
                   imageSize: o.imageSize,
                   isFrontCamera: _isFrontCamera,
                   hideLowerBody: PosePainter.hidesLowerBody(widget.exercise),
@@ -742,7 +763,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
                       width: double.infinity,
                       backgroundColor: o.pose == null
                           ? Colors.black.withValues(alpha: 0.65)
-                          : (!o.landmarksOk
+                          : (!o.landmarksOk || o.showNeutral
                               ? Colors.orange.shade800.withValues(alpha: 0.85)
                               : o.isCorrect
                               ? AppColors.correct.withValues(alpha: 0.85)
@@ -753,8 +774,8 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
                           Icon(
                             o.pose == null
                                 ? Icons.person_search_rounded
-                                : (!o.landmarksOk
-                                    ? Icons.visibility_off_rounded
+                                : (!o.landmarksOk || o.showNeutral
+                                    ? Icons.info_outline_rounded
                                     : (o.isCorrect ? Icons.check_circle_rounded : Icons.warning_rounded)),
                             color: Colors.white,
                           ),
@@ -821,12 +842,18 @@ class _OverlayState {
   final bool landmarksOk;
   final String guideText;
 
+  /// True when the skeleton should be drawn orange to signal "can't judge form
+  /// yet / not in position" rather than red (incorrect) or green (correct).
+  /// Distinct from landmarksOk so the skeleton still draws while orange.
+  final bool showNeutral;
+
   const _OverlayState({
     required this.pose,
     required this.imageSize,
     required this.isCorrect,
     required this.landmarksOk,
     required this.guideText,
+    this.showNeutral = false,
   });
 
   static const initial = _OverlayState(

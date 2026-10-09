@@ -82,6 +82,93 @@ class PoseAnalyzer {
     'Side Plank': 'Keep your hips lifted and level',
   };
 
+  // ---- Start-position gate ------------------------------------------------
+  //
+  // Before the user is in the exercise's required starting position, we don't
+  // want a misleading green/red verdict. This returns a short on-screen reason
+  // (shown with an orange skeleton) when they're clearly not ready yet, or
+  // null when they are. Checks are deliberately coarse and scale-free so they
+  // work at any distance/height; they only catch gross mis-positioning, not
+  // fine form.
+  //
+  // Geometry (ML Kit normalized coords, y grows downward):
+  //   Squat     : needs to be STANDING -- hips clearly above knees, which are
+  //               above ankles (vertical stack). If the vertical stack is
+  //               collapsed the user is already squatting/sitting or sideways.
+  //   Push-Up   : needs to be DOWN in a plank -- shoulder and ankle at nearly
+  //               the same height (horizontal body line). Standing up fails it.
+  //   Pull-Up   : needs both shoulders visible and hanging low -- checked
+  //               separately by the calibration; here we only confirm the body
+  //               is roughly upright (shoulders below hips means hanging, which
+  //               is the ready state, so we accept it).
+  //   Lunge     : needs to be STANDING (both feet on ground, upright torso)
+  //               before stepping into a lunge.
+  //   Plank     : DOWN in a plank -- shoulder and ankle near the same height.
+  //   Side Plank: DOWN on the side -- again a horizontal body line.
+  //
+  // A "body-line horizontal" test catches standing when you should be prone;
+  // a torso-drop test catches being collapsed/sideways when you should be
+  // standing. These are the two gross errors the user reported.
+
+  /// Whether the body line (shoulder->ankle) is roughly horizontal, i.e. the
+  /// user is prone/planking rather than standing. Used for the ground exercises.
+  static bool _bodyLineIsHorizontal(Pose pose) {
+    final s = pose.landmarks[_lShoulder];
+    final a = pose.landmarks[_lAnkle];
+    if (s == null || a == null) return false;
+    final dx = (s.x - a.x).abs();
+    final dy = (s.y - a.y).abs();
+    // Horizontal when the horizontal span is at least as large as the vertical
+    // drop -> lying down. Standing gives a tall, narrow span.
+    return dx >= dy;
+  }
+
+  /// Returns a reason string when the user is not in [exercise]'s starting
+  /// position (so the UI can show orange + the message), or null when ready.
+  static String? checkStartPosition(String exercise, Pose pose) {
+    final l = pose.landmarks;
+    switch (exercise) {
+      case 'Squat':
+      case 'Lunge':
+        // Must be standing upright: torso vertical (shoulder above hip by a
+        // clear margin) and feet on the ground (ankle below hip).
+        final s = l[_lShoulder];
+        final h = l[_lHip];
+        final a = l[_lAnkle];
+        if (s == null || h == null || a == null) return null; // landmark check handles it
+        final torsoDrop = (h.y - s.y); // positive when hip is below shoulder
+        if (torsoDrop < 0.05) {
+          return 'Stand up straight to start -- face your left side to the camera';
+        }
+        if (_bodyLineIsHorizontal(pose)) {
+          return 'Stand facing your left side -- we can\'t see your form from this angle';
+        }
+        return null;
+      case 'Push-Up':
+      case 'Plank':
+      case 'Side Plank':
+        // Must be DOWN in a plank: body line horizontal. Standing up fails.
+        if (!_bodyLineIsHorizontal(pose)) {
+          return exercise == 'Side Plank'
+              ? 'Get into a side plank -- lie on your side, body in a straight line'
+              : 'Get down into a plank position -- body in a straight line';
+        }
+        return null;
+      case 'Pull-Up':
+        // Hanging under the bar: shoulders below hips. If shoulders are ABOVE
+        // hips the user is standing on the ground, not hanging.
+        final s = l[_lShoulder];
+        final h = l[_lHip];
+        if (s == null || h == null) return null;
+        if ((h.y - s.y) < 0.02) {
+          return 'Hang from the bar with your arms straight to start';
+        }
+        return null;
+      default:
+        return null;
+    }
+  }
+
   static const _lShoulder = PoseLandmarkType.leftShoulder;
   static const _rShoulder = PoseLandmarkType.rightShoulder;
   static const _lElbow = PoseLandmarkType.leftElbow;
