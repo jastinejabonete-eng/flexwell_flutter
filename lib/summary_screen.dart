@@ -158,10 +158,10 @@ class _SummaryScreenState extends State<SummaryScreen> {
     final secondaryTextColor = isDark ? Colors.white54 : AppColors.lightTextSecondary;
 
     // Guard against out-of-range values so the ring and text never break.
-    final safeAccuracy = accuracy.clamp(0, 100).toInt();
-    final safeReps = reps < 0 ? 0 : reps;
-    final safePerfect = perfectReps.clamp(0, safeReps).toInt();
-    final safeHold = longestHold < 0 ? 0 : longestHold;
+    final safeAccuracy = widget.accuracy.clamp(0, 100).toInt();
+    final safeReps = widget.reps < 0 ? 0 : widget.reps;
+    final safePerfect = widget.perfectReps.clamp(0, safeReps).toInt();
+    final safeHold = widget.longestHold < 0 ? 0 : widget.longestHold;
 
     // Dynamic fitness ring color based on accuracy score
     final statusColor = safeAccuracy >= 80
@@ -171,7 +171,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
     // Only show the perfect-rep breakout for rep-based exercises where we
     // actually completed at least one rep — otherwise "0 / 0 perfect" is
     // just noise.
-    final showPerfectReps = isRepBased && safeReps > 0;
+    final showPerfectReps = widget.isRepBased && safeReps > 0;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
@@ -203,7 +203,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Target: $exercise',
+                      'Target: ${widget.exercise}',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 16,
@@ -291,7 +291,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
-                                  isRepBased ? Icons.repeat_rounded : Icons.timer_rounded,
+                                  widget.isRepBased ? Icons.repeat_rounded : Icons.timer_rounded,
                                   color: isDark
                                       ? AppColors.accent
                                       : Colors.green.shade800,
@@ -303,7 +303,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    isRepBased ? '$safeReps' : '${safeHold}s',
+                                    widget.isRepBased ? '$safeReps' : '${safeHold}s',
                                     style: TextStyle(
                                       fontSize: 32,
                                       fontWeight: FontWeight.w900,
@@ -311,7 +311,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                     ),
                                   ),
                                   Text(
-                                    isRepBased
+                                    widget.isRepBased
                                         ? 'Total Reps Completed'
                                         : 'Longest Perfect Hold',
                                     style: TextStyle(
@@ -409,7 +409,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                         ),
                         onPressed: () => Navigator.pushReplacement(
                           context,
-                          fadeRoute(CameraScreen(exercise: exercise)),
+                          fadeRoute(CameraScreen(exercise: widget.exercise)),
                         ),
                       ),
                     ),
