@@ -44,15 +44,31 @@ class KnnClassifier {
   }
 
   /// Main-isolate fallback; also what the worker's maths is checked against.
-  bool? classify(
+  /// Returns a real verdict, or [KnnVerdict.outOfDistribution] for a pose
+  /// unlike anything in training, or [KnnVerdict.unavailable] if the model
+  /// isn't loaded / input is unusable.
+  KnnVerdict classifyDetailed(
     String exercise,
     List<double> rawFeatures, {
     int k = 5,
     int? minIncorrectVotes,
   }) {
     final model = _models[exercise];
-    if (!_loaded || model == null) return null;
-    return knnClassifyFlat(model, rawFeatures, k: k, minIncorrectVotes: minIncorrectVotes);
+    if (!_loaded || model == null) return const KnnVerdict.unavailable();
+    return knnClassifyDetailed(model, rawFeatures,
+        k: k, minIncorrectVotes: minIncorrectVotes);
+  }
+
+  /// Back-compat wrapper: bool? with OOD collapsed to null.
+  bool? classify(
+    String exercise,
+    List<double> rawFeatures, {
+    int k = 5,
+    int? minIncorrectVotes,
+  }) {
+    final v = classifyDetailed(exercise, rawFeatures,
+        k: k, minIncorrectVotes: minIncorrectVotes);
+    return v.isOutOfDistribution ? null : v.isCorrect;
   }
 
   Map<String, Map<String, Object>> exportForWorker() =>

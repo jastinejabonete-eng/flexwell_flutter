@@ -77,6 +77,50 @@ def main():
             ],
         }
 
+        # Out-of-distribution (OOD) radius, shipped so the app can tell "I
+        # don't recognise this pose" from a real Correct/Incorrect verdict.
+        #
+        # Calibration (leave-one-group-out, data-driven): hold out ~20% of the
+        # examples, measure each held-out pose's distance to its nearest
+        # example in the remaining 80%, and take the 99th percentile. That is
+        # the smallest radius that keeps ~99% of genuinely valid poses inside,
+        # so real correct/incorrect reps are NOT flagged, while poses unlike
+        # anything in training fall outside -> app shows "uncertain".
+        #
+        # Do NOT use the in-model 1-NN distance: consecutive frames of the
+        # same rep are near-duplicates, so that distribution is tiny for some
+        # exercises (false-flagging good reps) and inflated by duplicates for
+        # others (never firing). The held-out calibration avoids both.
+        import math
+        import random
+        rng = random.Random(0)
+        n = len(vectors)
+        zc = [[(v[i] - means[i]) / stds[i] for i in range(dims)] for v in vectors]
+        if n >= 10:
+            perm = list(range(n))
+            rng.shuffle(perm)
+            n_hold = max(1, n // 5)
+            hold = perm[:n_hold]
+            model = perm[n_hold:]
+            dists = []
+            for h in hold:
+                zh = zc[h]
+                best = float("inf")
+                for b in model:
+                    zb = zc[b]
+                    d2 = 0.0
+                    for i in range(dims):
+                        diff = zh[i] - zb[i]
+                        d2 += diff * diff
+                    if d2 < best:
+                        best = d2
+                if best < float("inf"):
+                    dists.append(math.sqrt(best))
+            if dists:
+                dists.sort()
+                p99 = dists[min(len(dists) - 1, int(math.ceil(0.99 * len(dists))) - 1)]
+                output[exercise]["oodRadius"] = round(max(p99, 1e-3), 4)
+
     output_path = DATASET_DIR / "knn_training_data.json"
     with open(output_path, "w") as f:
         json.dump(output, f, indent=2)

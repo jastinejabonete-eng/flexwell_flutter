@@ -557,8 +557,24 @@ class PoseAnalyzer {
       }
       final smoothedPose = _smoothPose(pose);
       final features = exercise == 'Lunge' ? _lungeFeatures(pose) : _plankStyleFeatures(pose);
-      final raw = await KnnWorker.instance.classify(exercise, features);
+      final verdict = await KnnWorker.instance.classifyDetailed(exercise, features);
+      if (kDebugMode && ++_traceCounter % 3 == 0) {
+        debugPrint('[$exercise frame] features='
+            '[${features.map((f) => f.toStringAsFixed(1)).join(", ")}] '
+            'verdict=${verdict.isCorrect} ood=${verdict.isOutOfDistribution}');
+      }
+      // Out-of-distribution: this pose is unlike anything the model was
+      // trained on. Show an honest "can't judge" state rather than guessing
+      // Correct or Incorrect (which is what caused wrong forms performed in
+      // an untrained way to show a false green).
+      if (verdict.isOutOfDistribution) {
+        _smoother.reset();
+        return AnalysisResult(false, 'Unfamiliar form - try to match the guide',
+            features[0], landmarksReliable: false);
+      }
+      final raw = verdict.isCorrect;
       if (raw == null) {
+        _smoother.reset();
         return AnalysisResult(false, 'Form model unavailable', features[0], landmarksReliable: false);
       }
       final isCorrect = _smoother.add(raw);

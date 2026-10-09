@@ -26,7 +26,7 @@ class KnnWorker {
   /// release() -> acquire() overlap can't leak a second isolate.
   int _generation = 0;
 
-  final Map<int, Completer<bool?>> _pending = {};
+  final Map<int, Completer<KnnVerdict>> _pending = {};
 
   /// Reference-counted so an overlapping screen transition can't kill the
   /// worker the new CameraScreen just started.
@@ -67,7 +67,17 @@ class KnnWorker {
         final done = _pending.remove(msg[0] as int);
         final code = msg[1] as int;
         if (code >= 0) _timeouts = 0; // a real answer: worker is healthy
-        done?.complete(code < 0 ? null : code == 1);
+        // code: 1 = correct, 0 = incorrect, -1 = unavailable/OOD combined is
+        // NOT enough, so the worker sends -2 for out-of-distribution.
+        if (done == null) return;
+        if (!done.isCompleted) {
+          done.complete(switch (code) {
+            1 => const KnnVerdict.correct(),
+            0 => const KnnVerdict.incorrect(),
+            -2 => const KnnVerdict.outOfDistribution(),
+            _ => const KnnVerdict.unavailable(),
+          });
+        }
       }
     });
 
@@ -109,26 +119,30 @@ class KnnWorker {
     debugPrint('KnnWorker isolate died, falling back to main-thread KNN');
     _commands = null;
     for (final c in _pending.values) {
-      if (!c.isCompleted) c.complete(null);
+      if (!c.isCompleted) c.complete(const KnnVerdict.unavailable());
     }
     _pending.clear();
   }
 
   /// Raw (un-normalized) features in; z-scoring happens inside the worker
   /// with the mean/std exported from Python's StandardScaler.
-  Future<bool?> classify(
+  ///
+  /// Completes with a [KnnVerdict]: a real Correct/Incorrect verdict, or
+  /// [KnnVerdict.outOfDistribution] for a pose unlike anything in training,
+  /// or [KnnVerdict.unavailable] when the model/input is unusable.
+  Future<KnnVerdict> classifyDetailed(
     String exercise,
     List<double> rawFeatures, {
     int k = 5,
     int? minIncorrectVotes,
   }) {
-    bool? onMainIsolate() {
+    KnnVerdict onMainIsolate() {
       try {
-        return KnnClassifier.instance.classify(exercise, rawFeatures,
+        return KnnClassifier.instance.classifyDetailed(exercise, rawFeatures,
             k: k, minIncorrectVotes: minIncorrectVotes);
       } catch (e) {
         debugPrint('Main-thread KNN failed: $e');
-        return null;
+        return const KnnVerdict.unavailable();
       }
     }
 
@@ -136,11 +150,17 @@ class KnnWorker {
     if (commands == null) return Future.value(onMainIsolate());
 
     final id = _nextId++;
-    final completer = Completer<bool?>();
+    final completer = Completer<KnnVerdict>();
     _pending[id] = completer;
     try {
-      commands.send(
-          <Object?>['classify', id, exercise, rawFeatures, k, minIncorrectVotes]);
+      commands.send(<Object?>[
+        'classifyDetailed',
+        id,
+        exercise,
+        rawFeatures,
+        k,
+        minIncorrectVotes
+      ]);
     } catch (e) {
       _pending.remove(id);
       return Future.value(onMainIsolate());
@@ -164,13 +184,26 @@ class KnnWorker {
     });
   }
 
+  /// Back-compat wrapper: collapses [KnnVerdict] to bool?. Out-of-distribution
+  /// poses return null (never a silent Correct/Incorrect guess).
+  Future<bool?> classify(
+    String exercise,
+    List<double> rawFeatures, {
+    int k = 5,
+    int? minIncorrectVotes,
+  }) async {
+    final v = await classifyDetailed(exercise, rawFeatures,
+        k: k, minIncorrectVotes: minIncorrectVotes);
+    return v.isOutOfDistribution ? null : v.isCorrect;
+  }
+
   void _shutdown() {
     _generation++; // cancels any in-flight _start()
     _isolate?.kill(priority: Isolate.immediate);
     _replies?.close();
     _lifecycle?.close();
     for (final c in _pending.values) {
-      if (!c.isCompleted) c.complete(null);
+      if (!c.isCompleted) c.complete(const KnnVerdict.unavailable());
     }
     _pending.clear();
     _isolate = null;
@@ -180,6 +213,15 @@ class KnnWorker {
     _starting = null;
     _timeouts = 0;
   }
+}
+
+/// Worker reply code for a [KnnVerdict]: 1 = correct, 0 = incorrect,
+/// -2 = out-of-distribution, -1 = unavailable. Matches the decoder in
+/// KnnWorker's replies listener.
+int _codeFor(KnnVerdict v) {
+  if (v.isOutOfDistribution) return -2;
+  if (v.isCorrect == null) return -1;
+  return v.isCorrect! ? 1 : 0;
 }
 
 void _workerMain(SendPort toMain) {
@@ -200,15 +242,17 @@ void _workerMain(SendPort toMain) {
             // Skip this exercise; the main isolate will handle it.
           }
         });
-      } else if (m[0] == 'classify') {
+      } else if (m[0] == 'classifyDetailed') {
         id = m[1] as int;
         final model = models[m[2] as String];
         final raw = List<double>.from(m[3] as List);
-        final result = model == null
-            ? null
-            : knnClassifyFlat(model, raw,
+        final verdict = model == null
+            ? const KnnVerdict.unavailable()
+            : knnClassifyDetailed(model, raw,
                 k: m[4] as int, minIncorrectVotes: m[5] as int?);
-        toMain.send(<Object?>[id, result == null ? -1 : (result ? 1 : 0)]);
+        // code: 1 = correct, 0 = incorrect, -2 = out-of-distribution,
+        // -1 = unavailable. (The old 'classify' message is no longer sent.)
+        toMain.send(<Object?>[id, _codeFor(verdict)]);
       }
     } catch (_) {
       if (id != null) toMain.send(<Object?>[id, -1]);

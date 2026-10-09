@@ -21,7 +21,16 @@ class FlatKnnModel {
   final Float64List features; // count * dims, already z-scored
   final Uint8List isCorrect; // 1 = "correct"
 
-  FlatKnnModel(this.mean, this.std, this.dims, this.features, this.isCorrect);
+  /// Radius in z-space beyond which a pose is considered out-of-distribution
+  /// (unlike anything the model was trained on). Shipped per exercise by
+  /// export_for_app.py, calibrated as the 99th percentile of held-out real
+  /// poses' nearest-neighbour distance. When a live pose is farther than this
+  /// from every training example, the app shows an "uncertain" state instead
+  /// of guessing Correct/Incorrect. Null => no OOD check (older model files).
+  final double? oodRadius;
+
+  FlatKnnModel(this.mean, this.std, this.dims, this.features, this.isCorrect,
+      {this.oodRadius});
 
   int get count => isCorrect.length;
 
@@ -69,7 +78,11 @@ class FlatKnnModel {
       features.setRange(e * dims, (e + 1) * dims, zScore(raw, mean, std));
       isCorrect[e] = example['label'] == 'correct' ? 1 : 0;
     }
-    return FlatKnnModel(mean, std, dims, features, isCorrect);
+    final oodRaw = value['oodRadius'];
+    final ood = (oodRaw is num && oodRaw.isFinite && oodRaw > 0)
+        ? oodRaw.toDouble()
+        : null;
+    return FlatKnnModel(mean, std, dims, features, isCorrect, oodRadius: ood);
   }
 
   Map<String, Object> toMessage() => {
@@ -78,6 +91,7 @@ class FlatKnnModel {
         'dims': dims,
         'features': features,
         'isCorrect': isCorrect,
+        if (oodRadius != null) 'oodRadius': oodRadius!,
       };
 
   factory FlatKnnModel.fromMessage(Map<Object?, Object?> m) => FlatKnnModel(
@@ -86,6 +100,7 @@ class FlatKnnModel {
         m['dims'] as int,
         m['features'] as Float64List,
         m['isCorrect'] as Uint8List,
+        oodRadius: (m['oodRadius'] as num?)?.toDouble(),
       );
 }
 
@@ -105,18 +120,47 @@ Map<String, FlatKnnModel> parseKnnModels(String jsonString) {
   return models;
 }
 
-/// Same behaviour as the old KnnClassifier.classify: true = correct,
-/// false = incorrect, null = no verdict possible.
-bool? knnClassifyFlat(
+/// Result of a KNN classification, distinguishing "no model / bad input"
+/// from "pose is out-of-distribution" from a real Correct/Incorrect verdict.
+class KnnVerdict {
+  /// true = correct, false = incorrect. Null when [isOutOfDistribution] is
+  /// true (we refuse to guess) or when the model/input is unusable.
+  final bool? isCorrect;
+
+  /// True when the pose is farther than the model's [FlatKnnModel.oodRadius]
+  /// from every training example, i.e. unlike anything it was trained on.
+  /// The caller should show an "uncertain" state rather than a form verdict.
+  final bool isOutOfDistribution;
+
+  const KnnVerdict.correct()
+      : isCorrect = true,
+        isOutOfDistribution = false;
+  const KnnVerdict.incorrect()
+      : isCorrect = false,
+        isOutOfDistribution = false;
+  const KnnVerdict.outOfDistribution()
+      : isCorrect = null,
+        isOutOfDistribution = true;
+  const KnnVerdict.unavailable()
+      : isCorrect = null,
+        isOutOfDistribution = false;
+}
+
+/// Classify a pose and also flag out-of-distribution poses.
+/// Returns [KnnVerdict.unavailable] when the model/input is unusable (the old
+/// `knnClassifyFlat` null case), [KnnVerdict.outOfDistribution] when the pose
+/// is unlike anything in training, otherwise a real Correct/Incorrect verdict.
+KnnVerdict knnClassifyDetailed(
   FlatKnnModel m,
   List<double> raw, {
   int k = 5,
   int? minIncorrectVotes,
 }) {
-  if (k <= 0 || m.count == 0 || raw.length != m.dims) return null;
-  // NaN / Infinity would poison every distance comparison.
+  if (k <= 0 || m.count == 0 || raw.length != m.dims) {
+    return const KnnVerdict.unavailable();
+  }
   for (final v in raw) {
-    if (!v.isFinite) return null;
+    if (!v.isFinite) return const KnnVerdict.unavailable();
   }
 
   final dims = m.dims;
@@ -145,11 +189,53 @@ bool? knnClassifyFlat(
     if (count < k) count++;
   }
 
+  // Out-of-distribution check: the nearest neighbour (bestDist[0]) is the
+  // closest training example of ANY class. If even that is beyond the
+  // shipped radius, this pose is unlike the whole training set.
+  if (m.oodRadius != null && count > 0) {
+    final nearest = bestDist[0] >= 0 ? _sqrt(bestDist[0]) : 0.0;
+    if (nearest > m.oodRadius!) {
+      return const KnnVerdict.outOfDistribution();
+    }
+  }
+
   var correctVotes = 0;
   for (var i = 0; i < count; i++) {
     if (bestCorrect[i]) correctVotes++;
   }
   final incorrectVotes = count - correctVotes;
-  if (minIncorrectVotes != null) return incorrectVotes < minIncorrectVotes;
-  return correctVotes > count / 2;
+  if (minIncorrectVotes != null) {
+    return incorrectVotes < minIncorrectVotes
+        ? const KnnVerdict.correct()
+        : const KnnVerdict.incorrect();
+  }
+  return correctVotes > count / 2
+      ? const KnnVerdict.correct()
+      : const KnnVerdict.incorrect();
+}
+
+// math.sqrt without importing dart:math at the top (keeps this file's imports
+// minimal and isolate-friendly); trivial and inlined by the compiler.
+double _sqrt(double x) {
+  if (x <= 0) return 0;
+  var guess = x;
+  for (var i = 0; i < 40; i++) {
+    guess = 0.5 * (guess + x / guess);
+  }
+  return guess;
+}
+
+/// Same behaviour as the old KnnClassifier.classify: true = correct,
+/// false = incorrect, null = no verdict possible. Out-of-distribution poses
+/// return null (they are NOT silently voted correct/incorrect) -- callers that
+/// want to distinguish OOD from unavailable should use [knnClassifyDetailed].
+bool? knnClassifyFlat(
+  FlatKnnModel m,
+  List<double> raw, {
+  int k = 5,
+  int? minIncorrectVotes,
+}) {
+  final v = knnClassifyDetailed(m, raw, k: k, minIncorrectVotes: minIncorrectVotes);
+  if (v.isOutOfDistribution) return null;
+  return v.isCorrect;
 }
