@@ -145,17 +145,39 @@ class PosePainter extends CustomPainter {
       ..strokeWidth = 12
       ..strokeCap = StrokeCap.round;
 
-    // The preview fills the screen with BoxFit.cover-style behavior (uniform
-    // scale, cropped overflow, centered). Landmarks are mapped the same way.
-    final scale = size.width / imageSize.width > size.height / imageSize.height
-        ? size.width / imageSize.width
-        : size.height / imageSize.height;
-    final offsetX = (size.width - imageSize.width * scale) / 2;
-    final offsetY = (size.height - imageSize.height * scale) / 2;
+    // Mirror the preview's layout EXACTLY (see camera_screen.dart):
+    //   previewAspectRatio = 1 / camera.aspectRatio
+    //   a child is laid out at that aspect ratio inside the screen
+    //   (AspectRatio picks the box that fits the screen), then uniformly
+    //   scaled by scale = max(screenAR/previewAR, previewAR/screenAR) about
+    //   the screen centre. Using any other scale expression (e.g. the old
+    //   max(size.w/imageSize.w, size.h/imageSize.h)) makes the skeleton drift
+    //   off the body whenever the sensor and screen aspects differ.
+    final previewAspectRatio = imageSize.width / imageSize.height;
+    final screenAR = size.width / size.height;
+    var scale = screenAR / previewAspectRatio;
+    if (scale < 1) scale = 1 / scale;
+
+    // Size of the laid-out preview box (the one that fits the screen).
+    double laidW, laidH;
+    if (imageSize.width / imageSize.height > screenAR) {
+      laidW = size.width;
+      laidH = size.width / previewAspectRatio;
+    } else {
+      laidH = size.height;
+      laidW = size.height * previewAspectRatio;
+    }
+    final offsetX = (size.width - laidW) / 2;
+    final offsetY = (size.height - laidH) / 2;
 
     Offset mapPoint(PoseLandmark landmark) {
       var x = landmark.x * scale + offsetX;
-      if (isFrontCamera) x = size.width - x;
+      // Mirror in SCREEN space: x -> W - x. Flip the raw landmark BEFORE
+      // applying scale+offset so the offset keeps its sign:
+      //   x = size.width - landmark.x * scale - offsetX.
+      if (isFrontCamera) {
+        x = size.width - landmark.x * scale - offsetX;
+      }
       return Offset(x, landmark.y * scale + offsetY);
     }
 
