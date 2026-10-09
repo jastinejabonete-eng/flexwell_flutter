@@ -160,9 +160,10 @@ class PoseAnalyzer {
   // DRAWN coordinates makes the skeleton glide instead of shaking, without
   // touching the raw pose used for classification (features stay faithful).
   final Map<PoseLandmarkType, _Point3D> _lmEma = {};
-  // Smaller alpha = smoother but laggier. 0.5 tracks fast movement while still
-  // damping pixel-level noise.
-  static const double _lmEmaAlpha = 0.5;
+  // Landmark EMA. 0.7 keeps a little jitter rejection while adding far less
+  // lag than 0.5; the smoothing ablation showed EMA buys ~0 accuracy on the
+  // frame-classified exercises, so favouring responsiveness here is free.
+  static const double _lmEmaAlpha = 0.7;
 
   /// Returns a copy of [pose] whose x/y are a light EMA of recent frames.
   /// The returned pose carries the same likelihoods and types, so reliability

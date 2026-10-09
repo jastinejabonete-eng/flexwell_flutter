@@ -123,8 +123,12 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   // ML Kit + KNN consistently overrun the frame budget, the busy gate drops
   // frames anyway, so raise the interval to rebuild the overlay at a rate the
   // device can actually sustain, and lower it again when processing is fast.
-  int _processEveryNthFrame = 3;
-  static const int _minFrameSkip = 3;
+  int _processEveryNthFrame = _minFrameSkip; // starts at 2; re-adapts per device
+  // Floor of 2 (was 3): at 30fps a skip of 3 costs ~100ms of latency, but the
+  // adaptive logic below can still raise this up to _maxFrameSkip when the
+  // device is over budget. Frame rate doesn't change what gets classified,
+  // only how often, so a lower floor is free accuracy-wise.
+  static const int _minFrameSkip = 2;
   static const int _maxFrameSkip = 8;
   // A processed frame should finish within this many ms to keep ~10 fps. An EMA
   // of the full process time decides the interval.

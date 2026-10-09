@@ -29,8 +29,14 @@ class FlatKnnModel {
   /// of guessing Correct/Incorrect. Null => no OOD check (older model files).
   final double? oodRadius;
 
-  FlatKnnModel(this.mean, this.std, this.dims, this.features, this.isCorrect,
-      {this.oodRadius});
+  FlatKnnModel(
+    this.mean,
+    this.std,
+    this.dims,
+    this.features,
+    this.isCorrect, {
+    this.oodRadius,
+  });
 
   int get count => isCorrect.length;
 
@@ -39,21 +45,24 @@ class FlatKnnModel {
     final stdList = value['std'];
     final examples = value['examples'];
     if (meanList is! List || stdList is! List || examples is! List) {
-      throw const FormatException('Model needs "mean", "std" and "examples" lists');
+      throw const FormatException(
+        'Model needs "mean", "std" and "examples" lists',
+      );
     }
 
-    final mean = Float64List.fromList(
-        [for (final v in meanList) (v as num).toDouble()]);
-    final std = Float64List.fromList(
-        [for (final v in stdList) (v as num).toDouble()]);
+    final mean = Float64List.fromList([
+      for (final v in meanList) (v as num).toDouble(),
+    ]);
+    final std = Float64List.fromList([
+      for (final v in stdList) (v as num).toDouble(),
+    ]);
     final dims = mean.length;
 
     if (dims == 0) {
       throw const FormatException('Model has zero feature dimensions');
     }
     if (std.length != dims) {
-      throw FormatException(
-          'mean has $dims entries but std has ${std.length}');
+      throw FormatException('mean has $dims entries but std has ${std.length}');
     }
     if (mean.any((v) => !v.isFinite) || std.any((v) => !v.isFinite)) {
       throw const FormatException('mean/std contain non-finite values');
@@ -67,10 +76,12 @@ class FlatKnnModel {
         throw FormatException('Example $e is malformed');
       }
       final raw = [
-        for (final v in example['features'] as List) (v as num).toDouble()
+        for (final v in example['features'] as List) (v as num).toDouble(),
       ];
       if (raw.length != dims) {
-        throw FormatException('Example $e has ${raw.length} features, expected $dims');
+        throw FormatException(
+          'Example $e has ${raw.length} features, expected $dims',
+        );
       }
       if (raw.any((v) => !v.isFinite)) {
         throw FormatException('Example $e contains non-finite features');
@@ -86,22 +97,22 @@ class FlatKnnModel {
   }
 
   Map<String, Object> toMessage() => {
-        'mean': mean,
-        'std': std,
-        'dims': dims,
-        'features': features,
-        'isCorrect': isCorrect,
-        if (oodRadius != null) 'oodRadius': oodRadius!,
-      };
+    'mean': mean,
+    'std': std,
+    'dims': dims,
+    'features': features,
+    'isCorrect': isCorrect,
+    'oodRadius': ?oodRadius,
+  };
 
   factory FlatKnnModel.fromMessage(Map<Object?, Object?> m) => FlatKnnModel(
-        m['mean'] as Float64List,
-        m['std'] as Float64List,
-        m['dims'] as int,
-        m['features'] as Float64List,
-        m['isCorrect'] as Uint8List,
-        oodRadius: (m['oodRadius'] as num?)?.toDouble(),
-      );
+    m['mean'] as Float64List,
+    m['std'] as Float64List,
+    m['dims'] as int,
+    m['features'] as Float64List,
+    m['isCorrect'] as Uint8List,
+    oodRadius: (m['oodRadius'] as num?)?.toDouble(),
+  );
 }
 
 /// Top-level so it can run inside compute() at startup.
@@ -132,18 +143,14 @@ class KnnVerdict {
   /// The caller should show an "uncertain" state rather than a form verdict.
   final bool isOutOfDistribution;
 
-  const KnnVerdict.correct()
-      : isCorrect = true,
-        isOutOfDistribution = false;
-  const KnnVerdict.incorrect()
-      : isCorrect = false,
-        isOutOfDistribution = false;
+  const KnnVerdict.correct() : isCorrect = true, isOutOfDistribution = false;
+  const KnnVerdict.incorrect() : isCorrect = false, isOutOfDistribution = false;
   const KnnVerdict.outOfDistribution()
-      : isCorrect = null,
-        isOutOfDistribution = true;
+    : isCorrect = null,
+      isOutOfDistribution = true;
   const KnnVerdict.unavailable()
-      : isCorrect = null,
-        isOutOfDistribution = false;
+    : isCorrect = null,
+      isOutOfDistribution = false;
 }
 
 /// Classify a pose and also flag out-of-distribution poses.
@@ -235,7 +242,12 @@ bool? knnClassifyFlat(
   int k = 5,
   int? minIncorrectVotes,
 }) {
-  final v = knnClassifyDetailed(m, raw, k: k, minIncorrectVotes: minIncorrectVotes);
+  final v = knnClassifyDetailed(
+    m,
+    raw,
+    k: k,
+    minIncorrectVotes: minIncorrectVotes,
+  );
   if (v.isOutOfDistribution) return null;
   return v.isCorrect;
 }
