@@ -1,0 +1,11 @@
+KNN (k=5)            train=     1.15 ms  infer=  0.8110 ms/sample  model=    58.7 KB
+SVM (RBF)            train=    27.85 ms  infer=  0.1289 ms/sample  model=    29.8 KB
+Random Forest        train=   134.66 ms  infer=  3.9610 ms/sample  model=  2851.3 KB
+Gradient Boosting    train=   115.65 ms  infer=  0.2111 ms/sample  model=   124.3 KB
+Decision Tree        train=     2.38 ms  infer=  0.0852 ms/sample  model=    33.6 KB
+Naive Bayes          train=     0.92 ms  infer=  0.1059 ms/sample  model=     0.6 KB
+Logistic Reg.        train=     4.04 ms  infer=  0.1220 ms/sample  model=     0.7 KB
+
+saved algo_cost.csv
+
+KNN vs SVM/RF size ratio: 8.6 x larger on average

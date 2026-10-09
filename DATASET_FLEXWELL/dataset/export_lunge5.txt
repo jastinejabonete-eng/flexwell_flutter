@@ -1,0 +1,15 @@
+Wrote knn_training_data.json
+  Lunge: 5039 examples, 5 feature(s), mean=[135.42, 11.05, 32.2, 1.23, 22.33], std=[36.04, 15.95, 30.96, 0.34, 25.54]
+  Plank: 2273 examples, 3 feature(s), mean=[162.4, 0.08, 0.05], std=[12.23, 0.05, 0.03]
+  Pull-Up: 96 examples, 2 feature(s), mean=[-0.33, 1.49], std=[0.3, 0.28]
+  Push-Up: 78 examples, 2 feature(s), mean=[81.35, 167.15], std=[35.03, 14.08]
+  Side Plank: 3577 examples, 3 feature(s), mean=[166.6, 0.06, 0.15], std=[9.27, 0.04, 0.09]
+  Squat: 29 examples, 2 feature(s), mean=[54.44, 55.68], std=[33.18, 30.58]
+
+Feature-width sanity check:
+  WARNING Lunge: exported 5 features but Dart expects 2 -- train/serve mismatch! accuracy will be wrong.
+  Plank: 3 features OK
+  Pull-Up: 2 features OK
+  Push-Up: 2 features OK
+  Side Plank: 3 features OK
+  Squat: 2 features OK

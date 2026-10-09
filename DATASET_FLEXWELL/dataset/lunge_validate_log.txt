@@ -1,0 +1,25 @@
+feature set                               holdout      CV
+----------------------------------------------------------
+current  [f1,f2]                            0.726   0.723
+3-feat   [f1,f2,shin]                       0.798   0.779
+4-feat   [f1,f2,shin,gap]                   0.853   0.839
+5-feat   [f1,f2,shin,gap,thigh]             0.863   0.849
+
+=== detailed holdout report: 5-feat   [f1,f2,shin,gap,thigh] ===
+              precision    recall  f1-score   support
+
+   incorrect      0.715     0.848     0.776       302
+     correct      0.937     0.869     0.902       781
+
+    accuracy                          0.863      1083
+   macro avg      0.826     0.859     0.839      1083
+weighted avg      0.875     0.863     0.867      1083
+
+=== seed stability (10 splits): accuracy per feature set ===
+      current  [f1,f2]  3-feat   [f1,f2,shin]  4-feat   [f1,f2,shin,gap]  5-feat   [f1,f2,shin,gap,thigh]
+mean             0.711                  0.740                      0.801                            0.823
+std              0.053                  0.056                      0.067                            0.061
+min              0.616                  0.656                      0.702                            0.739
+
+4-feature beats current 2-feature on 10/10 random splits
+mean gain: +0.090

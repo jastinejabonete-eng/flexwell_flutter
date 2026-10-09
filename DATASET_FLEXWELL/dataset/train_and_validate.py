@@ -29,7 +29,6 @@ from sklearn.pipeline import make_pipeline
 from sklearn.metrics import classification_report
 
 df = pd.read_csv("features.csv")
-feature_cols = ["feature_1", "feature_2"]
 
 if "video_id" not in df.columns:
     raise SystemExit(
@@ -37,12 +36,20 @@ if "video_id" not in df.columns:
         "to regenerate it before trusting any numbers from this script."
     )
 
+# Per-exercise feature columns. Lunge emits 5, Plank/Side Plank 3, the rest 2,
+# so which columns are usable must be decided per exercise, not globally --
+# a 2-feature exercise has NaN (not data) in feature_3..5.
+ALL_FEATURE_COLS = ["feature_1", "feature_2", "feature_3", "feature_4", "feature_5"]
+
 for exercise in df["exercise"].unique():
     subset = df[df["exercise"] == exercise]
+    feature_cols = [c for c in ALL_FEATURE_COLS
+                    if c in subset.columns and subset[c].notna().all()]
     X = subset[feature_cols].values
     y = subset["label"].values
     groups = subset["video_id"].values
     n_videos = subset["video_id"].nunique()
+    print(f"\n=== {exercise}: using {len(feature_cols)} features {feature_cols} ===")
 
     if len(subset) < 20:
         print(f"\n{exercise}: only {len(subset)} samples -- collect more data before trusting this.")

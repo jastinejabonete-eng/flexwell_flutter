@@ -1,0 +1,8 @@
+algorithm,fit_ms,infer_ms,model_kb
+Naive Bayes,0.93,0.1013,0.6
+Logistic Reg.,3.2,0.1077,0.7
+Decision Tree,3.39,0.0847,37.0
+SVM (RBF),45.79,0.1482,38.2
+KNN (k=5),1.11,0.7454,77.4
+Gradient Boosting,140.86,0.2007,126.6
+Random Forest,153.84,4.0831,3329.3

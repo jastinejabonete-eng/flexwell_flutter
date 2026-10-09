@@ -1,0 +1,101 @@
+
+==================================================================
+Lunge: 5044 samples from 0 videos
+==================================================================
+  baseline [feature_1, feature_2]      CV acc = nan
+  single candidate columns (CV acc):
+    feature_3                nan
+    feature_4                nan
+  top candidate + each base feature:
+    [feature_1 + feature_3           ] nan
+    [feature_2 + feature_3           ] nan
+    [feature_1 + feature_4           ] nan
+    [feature_2 + feature_4           ] nan
+
+  >>> BEST for Lunge: [feature_3]  CV acc = nan
+      (+nan over baseline -- candidate for adoption)
+
+==================================================================
+Plank: 2273 samples from 2273 videos
+==================================================================
+  baseline [feature_1, feature_2]      CV acc = 0.860
+    holdout: acc=0.84  incorrect-recall=0.80  n_test=455
+  single candidate columns (CV acc):
+    feature_3                0.669
+Traceback (most recent call last):
+  File "C:\Users\Janelyn\Downloads\Flutter\Flexwell\flexwell_flutter\DATASET_FLEXWELL\dataset\candidate_search.py", line 159, in <module>
+    main()
+  File "C:\Users\Janelyn\Downloads\Flutter\Flexwell\flexwell_flutter\DATASET_FLEXWELL\dataset\candidate_search.py", line 108, in main
+    a = grouped_cv_accuracy(df[[c]].values, df["label"].values, df["video_id"].values)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Janelyn\Downloads\Flutter\Flexwell\flexwell_flutter\DATASET_FLEXWELL\dataset\candidate_search.py", line 49, in grouped_cv_accuracy
+    scores = cross_val_score(pipe, X, y, cv=GroupKFold(n_splits=n_splits), groups=groups)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\_param_validation.py", line 218, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\model_selection\_validation.py", line 650, in cross_val_score
+    cv_results = cross_validate(
+                 ^^^^^^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\_param_validation.py", line 218, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\model_selection\_validation.py", line 392, in cross_validate
+    _warn_or_raise_about_fit_failures(results, error_score)
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\model_selection\_validation.py", line 478, in _warn_or_raise_about_fit_failures
+    raise ValueError(all_fits_failed_message)
+ValueError: 
+All the 5 fits failed.
+It is very likely that your model is misconfigured.
+You can try to debug the error by setting error_score='raise'.
+
+Below are more details about the failures:
+--------------------------------------------------------------------------------
+5 fits failed with the following error:
+Traceback (most recent call last):
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\model_selection\_validation.py", line 856, in _fit_and_score
+    estimator.fit(X_train, y_train, **fit_params)
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\base.py", line 1403, in wrapper
+    return fit_method(estimator, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\pipeline.py", line 636, in fit
+    Xt = self._fit(
+         ^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\pipeline.py", line 565, in _fit
+    X, fitted_transformer = fit_transform_one_cached(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\joblib\memory.py", line 331, in __call__
+    return self.func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\pipeline.py", line 1593, in _fit_transform_one_with_callbacks
+    Xt, transformer = _fit_transform_one(
+                      ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\pipeline.py", line 1566, in _fit_transform_one
+    res = transformer.fit_transform(X, y, **params.get("fit_transform", {}))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\_set_output.py", line 319, in wrapped
+    data_to_wrap = f(self, X, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\base.py", line 972, in fit_transform
+    return self.fit(X, y, **fit_params).transform(X)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\preprocessing\_data.py", line 928, in fit
+    return self.partial_fit(X, y, sample_weight)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\base.py", line 1403, in wrapper
+    return fit_method(estimator, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\preprocessing\_data.py", line 965, in partial_fit
+    X = validate_data(
+        ^^^^^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py", line 3038, in validate_data
+    out = check_array(X, input_name="X", **check_params)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\validation.py", line 1035, in check_array
+    array = _asarray_with_order(array, order=order, dtype=dtype, xp=xp)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\utils\_array_api.py", line 976, in _asarray_with_order
+    array = numpy.asarray(array, order=order, dtype=dtype)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: could not convert string to float: 'Plank/correct/Copy of IMG_0036(1).mov'
+

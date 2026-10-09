@@ -1,0 +1,26 @@
+exercise        k=5   k=15    SVM  k=15-SVM       p
+----------------------------------------------------
+Lunge         0.697  0.709  0.712    -0.003   0.727
+Plank         0.801  0.846  0.867    -0.021   0.001
+Side Plank    0.805  0.802  0.761    +0.041   0.000
+Pull-Up       0.701  0.773  0.763    +0.010   1.000
+Push-Up       0.859  0.846  0.859    -0.013   1.000
+----------------------------------------------------
+MEAN          0.773  0.795  0.792    +0.003
+
+Paired Wilcoxon (per-exercise, n=5): p = 1.000
+k=15 beats SVM on 2/5 exercises
+
+=== seed stability (10 random seeds, k=15 vs SVM) ===
+  seed 0: k15 correct=1417  SVM correct=1622   -> SVM wins
+  seed 1: k15 correct=1534  SVM correct=1621   -> SVM wins
+  seed 2: k15 correct=1328  SVM correct=1330   -> SVM wins
+  seed 3: k15 correct=1581  SVM correct=1595   -> SVM wins
+  seed 4: k15 correct=1295  SVM correct=1325   -> SVM wins
+  seed 5: k15 correct=1570  SVM correct=1496   -> k15 wins
+  seed 6: k15 correct=1564  SVM correct=1491   -> k15 wins
+  seed 7: k15 correct=1348  SVM correct=1376   -> SVM wins
+  seed 8: k15 correct=1414  SVM correct=1440   -> SVM wins
+  seed 9: k15 correct=1409  SVM correct=1340   -> k15 wins
+
+SVM wins or ties in 7/10 random splits.

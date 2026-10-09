@@ -1,0 +1,97 @@
+
+>>> running algo_comparison.py
+F1=0.550
+  Decision Tree        CV=0.510 (+/-0.110)  holdout_acc=0.556  P=0.575 R=0.583 F1=0.550
+  Gradient Boosting    CV=0.562 (+/-0.104)  holdout_acc=0.556  P=0.575 R=0.583 F1=0.550
+  Naive Bayes          CV=0.729 (+/-0.113)  holdout_acc=0.944  P=0.929 R=0.958 F1=0.940
+  Logistic Reg.        CV=0.667 (+/-0.105)  holdout_acc=0.833  P=0.833 R=0.875 F1=0.829
+
+=== Push-Up (78 rows, 70 videos, features=['feature_1', 'feature_2']) ===
+  KNN (k=5)            CV=0.858 (+/-0.074)  holdout_acc=1.000  P=1.000 R=1.000 F1=1.000
+  SVM (RBF)            CV=0.845 (+/-0.078)  holdout_acc=1.000  P=1.000 R=1.000 F1=1.000
+  Random Forest        CV=0.872 (+/-0.040)  holdout_acc=0.929  P=0.900 R=0.950 F1=0.918
+  Decision Tree        CV=0.860 (+/-0.045)  holdout_acc=0.929  P=0.900 R=0.950 F1=0.918
+  Gradient Boosting    CV=0.873 (+/-0.038)  holdout_acc=1.000  P=1.000 R=1.000 F1=1.000
+  Naive Bayes          CV=0.883 (+/-0.088)  holdout_acc=1.000  P=1.000 R=1.000 F1=1.000
+  Logistic Reg.        CV=0.871 (+/-0.071)  holdout_acc=1.000  P=1.000 R=1.000 F1=1.000
+
+=== SAVED ===
+algo_comparison.csv, algo_comparison_summary.json
+
+Mean CV accuracy by algorithm:
+  SVM (RBF)            0.8
+  KNN (k=5)            0.784
+  Gradient Boosting    0.762
+  Random Forest        0.759
+  Logistic Reg.        0.749
+  Naive Bayes          0.744
+  Decision Tree        0.717
+
+Best per exercise: {'Lunge': 'KNN (k=5)', 'Plank': 'SVM (RBF)', 'Side Plank': 'Gradient Boosting', 'Pull-Up': 'SVM (RBF)', 'Push-Up': 'Naive Bayes'}
+
+
+>>> running measure_cost.py
+KNN (k=5)            train=     1.11 ms  infer=  0.7454 ms/sample  model=    77.4 KB
+SVM (RBF)            train=    45.79 ms  infer=  0.1482 ms/sample  model=    38.2 KB
+Random Forest        train=   153.84 ms  infer=  4.0831 ms/sample  model=  3329.3 KB
+Gradient Boosting    train=   140.86 ms  infer=  0.2007 ms/sample  model=   126.6 KB
+Decision Tree        train=     3.39 ms  infer=  0.0847 ms/sample  model=    37.0 KB
+Naive Bayes          train=     0.93 ms  infer=  0.1013 ms/sample  model=     0.6 KB
+Logistic Reg.        train=     3.20 ms  infer=  0.1077 ms/sample  model=     0.7 KB
+
+saved algo_cost.csv
+
+KNN vs SVM/RF size ratio: 7.6 x larger on average
+
+
+>>> running make_figures.py
+tic Reg.          acc= 74.9  P= 80.6  R= 79.6  F1= 78.0
+Random Forest          acc= 75.9  P= 75.7  R= 77.8  F1= 75.8
+Gradient Boosting      acc= 76.2  P= 78.7  R= 78.9  F1= 77.9
+KNN (k=5)              acc= 78.4  P= 83.8  R= 84.4  F1= 83.9
+SVM (RBF)              acc= 80.0  P= 86.4  R= 83.5  F1= 83.5
+
+=== per-exercise KNN vs others ===
+Push-Up:
+   Decision Tree          0.860
+   Gradient Boosting      0.873
+   KNN (k=5)              0.858
+   Logistic Reg.          0.871
+   Naive Bayes            0.883
+   Random Forest          0.872
+   SVM (RBF)              0.845
+Plank:
+   Decision Tree          0.749
+   Gradient Boosting      0.813
+   KNN (k=5)              0.800
+   Logistic Reg.          0.764
+   Naive Bayes            0.759
+   Random Forest          0.783
+   SVM (RBF)              0.867
+Side Plank:
+   Decision Tree          0.761
+   Gradient Boosting      0.798
+   KNN (k=5)              0.786
+   Logistic Reg.          0.690
+   Naive Bayes            0.657
+   Random Forest          0.795
+   SVM (RBF)              0.754
+Lunge:
+   Decision Tree          0.702
+   Gradient Boosting      0.765
+   KNN (k=5)              0.768
+   Logistic Reg.          0.753
+   Naive Bayes            0.692
+   Random Forest          0.762
+   SVM (RBF)              0.764
+Pull-Up:
+   Decision Tree          0.510
+   Gradient Boosting      0.562
+   KNN (k=5)              0.710
+   Logistic Reg.          0.667
+   Naive Bayes            0.729
+   Random Forest          0.583
+   SVM (RBF)              0.770
+
+
+ALL DONE

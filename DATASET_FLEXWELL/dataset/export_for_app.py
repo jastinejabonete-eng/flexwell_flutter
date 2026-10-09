@@ -22,7 +22,11 @@ import csv
 import json
 from pathlib import Path
 
-FEATURE_COLS = ["feature_1", "feature_2", "feature_3"]
+# Every feature_N column that may exist. Lunge emits 5, Plank/Side Plank 3,
+# the rest 2 -- so this must cover the widest exercise, not a fixed 3.
+# example_features() keeps only the columns actually present and non-empty for
+# each row, so shorter exercises are unaffected.
+FEATURE_COLS = ["feature_1", "feature_2", "feature_3", "feature_4", "feature_5"]
 DATASET_DIR = Path(__file__).resolve().parent
 
 
@@ -85,10 +89,12 @@ def main():
               f"std={[round(s,2) for s in data['std']]}")
 
     # Sanity check: warn if feature width varies in a way the Dart side
-    # wouldn't expect. Dart sends: Squat/Push-Up/Pull-Up = 2,
-    # Lunge = 2, Plank/Side Plank = 3.
+    # Dart sends: Squat/Push-Up/Pull-Up = 2, Lunge = 5, Plank/Side Plank = 3.
+    # Keep this in sync with _classifierFeatures/_lungeFeatures in
+    # lib/pose_analyzer.dart -- it is the guard that catches a train/serve
+    # feature-width mismatch, which silently destroys accuracy.
     expected = {"Squat": 2, "Push-Up": 2, "Pull-Up": 2,
-                "Lunge": 2, "Plank": 3, "Side Plank": 3}
+                "Lunge": 5, "Plank": 3, "Side Plank": 3}
     print("\nFeature-width sanity check:")
     for exercise, data in output.items():
         dims = len(data["mean"])

@@ -257,12 +257,11 @@ Push-Up/correct/IMG_4472.MOV,Push-Up,correct,86,86,1,100.0
 Push-Up/correct/IMG_4473.MOV,Push-Up,correct,87,87,1,100.0
 Push-Up/correct/IMG_4474.MOV,Push-Up,correct,88,88,1,100.0
 Push-Up/correct/IMG_4475.MOV,Push-Up,correct,62,62,1,100.0
-Push-Up/correct/IMG_4476.MOV,Push-Up,correct,106,106,1,100.0
 Push-Up/correct/IMG_4477.MOV,Push-Up,correct,83,83,1,100.0
 Push-Up/incorrect/IMG_0466.mov,Push-Up,incorrect,83,83,1,100.0
 Push-Up/incorrect/IMG_0467.mov,Push-Up,incorrect,122,122,1,100.0
 Push-Up/incorrect/IMG_0468.mov,Push-Up,incorrect,119,119,1,100.0
-Push-Up/incorrect/IMG_0469.mov,Push-Up,incorrect,150,150,3,100.0
+Push-Up/incorrect/IMG_0469.mov,Push-Up,incorrect,150,150,5,100.0
 Push-Up/incorrect/IMG_0470.mov,Push-Up,incorrect,127,127,1,100.0
 Push-Up/incorrect/IMG_0471.mov,Push-Up,incorrect,128,128,1,100.0
 Push-Up/incorrect/IMG_0472.mov,Push-Up,incorrect,165,165,1,100.0
@@ -272,7 +271,7 @@ Push-Up/incorrect/IMG_0475.mov,Push-Up,incorrect,121,121,1,100.0
 Push-Up/incorrect/IMG_0476.mov,Push-Up,incorrect,173,173,2,100.0
 Push-Up/incorrect/IMG_0477.mov,Push-Up,incorrect,115,115,1,100.0
 Push-Up/incorrect/IMG_3306.MOV,Push-Up,incorrect,199,199,1,100.0
-Push-Up/incorrect/IMG_3307.MOV,Push-Up,incorrect,179,179,3,100.0
+Push-Up/incorrect/IMG_3307.MOV,Push-Up,incorrect,179,179,2,100.0
 Push-Up/incorrect/IMG_3308.MOV,Push-Up,incorrect,275,275,1,100.0
 Push-Up/incorrect/IMG_3309.MOV,Push-Up,incorrect,258,258,1,100.0
 Push-Up/incorrect/IMG_3310.MOV,Push-Up,incorrect,210,210,1,100.0
@@ -295,7 +294,7 @@ Push-Up/incorrect/IMG_4487.MOV,Push-Up,incorrect,73,73,1,100.0
 Push-Up/incorrect/IMG_4488.MOV,Push-Up,incorrect,128,128,1,100.0
 Push-Up/incorrect/IMG_4489.MOV,Push-Up,incorrect,100,100,1,100.0
 Push-Up/incorrect/IMG_4490.MOV,Push-Up,incorrect,74,74,1,100.0
-Side Plank/correct/Copy of IMG_0074(1).mov,Side Plank,correct,15,14,14,93.3
+Side Plank/correct/Copy of IMG_0074(1).mov,Side Plank,correct,15,15,15,100.0
 Side Plank/correct/Copy of IMG_0074.mov,Side Plank,correct,15,15,15,100.0
 Side Plank/correct/Copy of IMG_0075(1).mov,Side Plank,correct,15,15,15,100.0
 Side Plank/correct/Copy of IMG_0075.mov,Side Plank,correct,15,15,15,100.0
@@ -367,7 +366,7 @@ Side Plank/incorrect/Copy of IMG_0095(1).mov,Side Plank,incorrect,14,14,14,100.0
 Side Plank/incorrect/Copy of IMG_0095.mov,Side Plank,incorrect,14,14,14,100.0
 Side Plank/incorrect/Copy of IMG_0096(1).mov,Side Plank,incorrect,16,16,16,100.0
 Side Plank/incorrect/Copy of IMG_0096.mov,Side Plank,incorrect,16,16,16,100.0
-Side Plank/incorrect/Copy of IMG_0194.mov,Side Plank,incorrect,26,25,25,96.2
+Side Plank/incorrect/Copy of IMG_0194.mov,Side Plank,incorrect,26,26,26,100.0
 Side Plank/incorrect/Copy of IMG_0195.mov,Side Plank,incorrect,22,22,22,100.0
 Side Plank/incorrect/Copy of IMG_0196.mov,Side Plank,incorrect,22,22,22,100.0
 Side Plank/incorrect/Copy of IMG_0197.mov,Side Plank,incorrect,20,20,20,100.0
@@ -385,7 +384,7 @@ Side Plank/incorrect/Copy of IMG_0208.mov,Side Plank,incorrect,16,16,16,100.0
 Side Plank/incorrect/Copy of IMG_0209.mov,Side Plank,incorrect,15,15,15,100.0
 Side Plank/incorrect/Copy of IMG_0210.mov,Side Plank,incorrect,16,16,16,100.0
 Side Plank/incorrect/Copy of IMG_0211.mov,Side Plank,incorrect,16,16,16,100.0
-Side Plank/incorrect/Copy of IMG_2833.MOV,Side Plank,incorrect,80,80,80,100.0
+Side Plank/incorrect/Copy of IMG_2833.MOV,Side Plank,incorrect,80,79,79,98.8
 Side Plank/incorrect/Copy of IMG_2834.MOV,Side Plank,incorrect,53,53,53,100.0
 Side Plank/incorrect/Copy of IMG_2835.MOV,Side Plank,incorrect,66,66,66,100.0
 Side Plank/incorrect/Copy of IMG_2836.MOV,Side Plank,incorrect,76,76,76,100.0
@@ -410,7 +409,7 @@ Side Plank/incorrect/Copy of IMG_3073.MOV,Side Plank,incorrect,57,57,57,100.0
 Side Plank/incorrect/Copy of IMG_3074.MOV,Side Plank,incorrect,63,63,63,100.0
 Side Plank/incorrect/Copy of IMG_3076.MOV,Side Plank,incorrect,61,61,61,100.0
 Side Plank/incorrect/Copy of IMG_3077.MOV,Side Plank,incorrect,76,76,76,100.0
-Squat/correct/IMG_0356.mov,Squat,correct,81,80,1,98.8
+Squat/correct/IMG_0356.mov,Squat,correct,81,81,2,100.0
 Squat/correct/IMG_0357.mov,Squat,correct,90,90,1,100.0
 Squat/correct/IMG_0358.mov,Squat,correct,90,90,1,100.0
 Squat/correct/IMG_0359.mov,Squat,correct,78,78,1,100.0

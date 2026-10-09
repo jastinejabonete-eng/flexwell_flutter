@@ -1,0 +1,138 @@
+
+=== Lunge: using 5 features ['feature_1', 'feature_2', 'feature_3', 'feature_4', 'feature_5'] ===
+
+=== Lunge (5039 samples from 80 videos) ===
+  k=3: mean accuracy = 0.84 (+/- 0.03) [5-fold, grouped by video]
+  k=5: mean accuracy = 0.85 (+/- 0.03) [5-fold, grouped by video]
+  k=7: mean accuracy = 0.85 (+/- 0.03) [5-fold, grouped by video]
+  k=9: mean accuracy = 0.85 (+/- 0.03) [5-fold, grouped by video]
+  feature-subset comparison (k=5, grouped CV):
+    feature_1+feature_2      0.71 (+/- 0.04)
+    feature_1                0.58 (+/- 0.02)
+    feature_2                0.66 (+/- 0.03)
+
+  Holdout test report (k=5, 16 held-out videos, never seen in training):
+              precision    recall  f1-score   support
+
+     correct       0.94      0.87      0.90       781
+   incorrect       0.72      0.85      0.78       302
+
+    accuracy                           0.86      1083
+   macro avg       0.83      0.86      0.84      1083
+weighted avg       0.87      0.86      0.87      1083
+
+
+=== Plank: using 3 features ['feature_1', 'feature_2', 'feature_3'] ===
+
+=== Plank (2273 samples from 72 videos) ===
+  k=3: mean accuracy = 0.78 (+/- 0.07) [5-fold, grouped by video]
+  k=5: mean accuracy = 0.80 (+/- 0.07) [5-fold, grouped by video]
+  k=7: mean accuracy = 0.81 (+/- 0.06) [5-fold, grouped by video]
+  k=9: mean accuracy = 0.83 (+/- 0.07) [5-fold, grouped by video]
+  feature-subset comparison (k=5, grouped CV):
+    feature_1+feature_2      0.77 (+/- 0.06)
+    feature_1                0.63 (+/- 0.06)
+    feature_2                0.62 (+/- 0.08)
+
+  Holdout test report (k=5, 15 held-out videos, never seen in training):
+              precision    recall  f1-score   support
+
+     correct       0.95      0.79      0.86       258
+   incorrect       0.72      0.93      0.81       149
+
+    accuracy                           0.84       407
+   macro avg       0.83      0.86      0.84       407
+weighted avg       0.86      0.84      0.84       407
+
+
+=== Pull-Up: using 2 features ['feature_1', 'feature_2'] ===
+
+=== Pull-Up (96 samples from 66 videos) ===
+  k=3: mean accuracy = 0.67 (+/- 0.13) [5-fold, grouped by video]
+  k=5: mean accuracy = 0.71 (+/- 0.13) [5-fold, grouped by video]
+  k=7: mean accuracy = 0.71 (+/- 0.10) [5-fold, grouped by video]
+  k=9: mean accuracy = 0.77 (+/- 0.11) [5-fold, grouped by video]
+  feature-subset comparison (k=5, grouped CV):
+    feature_1+feature_2      0.71 (+/- 0.13)
+    feature_1                0.73 (+/- 0.11)
+    feature_2                0.60 (+/- 0.02)
+
+  Holdout test report (k=5, 14 held-out videos, never seen in training):
+              precision    recall  f1-score   support
+
+     correct       0.83      0.83      0.83         6
+   incorrect       0.92      0.92      0.92        12
+
+    accuracy                           0.89        18
+   macro avg       0.88      0.88      0.88        18
+weighted avg       0.89      0.89      0.89        18
+
+
+=== Push-Up: using 2 features ['feature_1', 'feature_2'] ===
+
+=== Push-Up (78 samples from 70 videos) ===
+  k=3: mean accuracy = 0.86 (+/- 0.08) [5-fold, grouped by video]
+  k=5: mean accuracy = 0.86 (+/- 0.07) [5-fold, grouped by video]
+  k=7: mean accuracy = 0.84 (+/- 0.08) [5-fold, grouped by video]
+  k=9: mean accuracy = 0.84 (+/- 0.08) [5-fold, grouped by video]
+  feature-subset comparison (k=5, grouped CV):
+    feature_1+feature_2      0.86 (+/- 0.07)
+    feature_1                0.79 (+/- 0.05)
+    feature_2                0.86 (+/- 0.05)
+
+  Holdout test report (k=5, 14 held-out videos, never seen in training):
+              precision    recall  f1-score   support
+
+     correct       1.00      1.00      1.00        10
+   incorrect       1.00      1.00      1.00         4
+
+    accuracy                           1.00        14
+   macro avg       1.00      1.00      1.00        14
+weighted avg       1.00      1.00      1.00        14
+
+
+=== Side Plank: using 3 features ['feature_1', 'feature_2', 'feature_3'] ===
+
+=== Side Plank (3577 samples from 114 videos) ===
+  k=3: mean accuracy = 0.79 (+/- 0.03) [5-fold, grouped by video]
+  k=5: mean accuracy = 0.79 (+/- 0.03) [5-fold, grouped by video]
+  k=7: mean accuracy = 0.79 (+/- 0.03) [5-fold, grouped by video]
+  k=9: mean accuracy = 0.79 (+/- 0.03) [5-fold, grouped by video]
+  feature-subset comparison (k=5, grouped CV):
+    feature_1+feature_2      0.71 (+/- 0.07)
+    feature_1                0.65 (+/- 0.07)
+    feature_2                0.64 (+/- 0.07)
+
+  Holdout test report (k=5, 23 held-out videos, never seen in training):
+              precision    recall  f1-score   support
+
+     correct       0.68      0.79      0.73       303
+   incorrect       0.79      0.68      0.73       351
+
+    accuracy                           0.73       654
+   macro avg       0.73      0.73      0.73       654
+weighted avg       0.74      0.73      0.73       654
+
+
+=== Squat: using 2 features ['feature_1', 'feature_2'] ===
+
+=== Squat (29 samples from 28 videos) ===
+  k=3: mean accuracy = 0.83 (+/- 0.11) [5-fold, grouped by video]
+  k=5: mean accuracy = 0.83 (+/- 0.11) [5-fold, grouped by video]
+  k=7: mean accuracy = 0.76 (+/- 0.17) [5-fold, grouped by video]
+  k=9: mean accuracy = 0.76 (+/- 0.17) [5-fold, grouped by video]
+  feature-subset comparison (k=5, grouped CV):
+    feature_1+feature_2      0.83 (+/- 0.11)
+    feature_1                0.76 (+/- 0.17)
+    feature_2                0.86 (+/- 0.07)
+
+  Holdout test report (k=5, 6 held-out videos, never seen in training):
+              precision    recall  f1-score   support
+
+     correct       0.80      0.80      0.80         5
+   incorrect       0.50      0.50      0.50         2
+
+    accuracy                           0.71         7
+   macro avg       0.65      0.65      0.65         7
+weighted avg       0.71      0.71      0.71         7
+

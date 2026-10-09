@@ -1,0 +1,19 @@
+Lunge candidate rows: 5044
+video_id populated: 0
+video_id unique: 0
+rows in features.csv: 3097 videos: 80
+row counts match: False
+Traceback (most recent call last):
+  File "C:\Users\Janelyn\Downloads\Flutter\Flexwell\flexwell_flutter\DATASET_FLEXWELL\dataset\lunge_feature_test.py", line 41, in <module>
+    lung["video_id"] = lung_base["video_id"].values
+    ~~~~^^^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\pandas\core\frame.py", line 4672, in __setitem__
+    self._set_item(key, value)
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\pandas\core\frame.py", line 4874, in _set_item
+    value, refs = self._sanitize_column(value)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\pandas\core\frame.py", line 5756, in _sanitize_column
+    com.require_length_match(value, self.index)
+  File "C:\Users\Janelyn\AppData\Local\Programs\Python\Python311\Lib\site-packages\pandas\core\common.py", line 601, in require_length_match
+    raise ValueError(
+ValueError: Length of values (3097) does not match length of index (5044)

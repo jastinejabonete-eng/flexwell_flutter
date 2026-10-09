@@ -358,7 +358,19 @@ class PoseAnalyzer {
     final dx = shoulder.x - hip.x;
     final dy = shoulder.y - hip.y;
     final torsoLean = atan2(dx, -dy).abs() * 180 / pi;
-    return [kneeAngle, torsoLean];
+    // Front shin angle from vertical (knee-over-ankle).
+    final shinAngle =
+        atan2(knee.x - ankle.x, ankle.y - knee.y).abs() * 180 / pi;
+    // Normalized hip-to-ankle vertical gap over trunk length (lunge depth).
+    // Matches the Python extractor's _div(): NaN when the denominator is
+    // ~0, so a degenerate frame is rejected by the classifier's finite
+    // check rather than scored as a 0-length torso.
+    final trunk = _dist(shoulder, hip);
+    final hipAnkleGap = trunk.abs() > 1e-6 ? (ankle.y - hip.y) / trunk : double.nan;
+    // Front thigh angle from vertical (depth / stance).
+    final thighAngle =
+        atan2(knee.x - hip.x, knee.y - hip.y).abs() * 180 / pi;
+    return [kneeAngle, torsoLean, shinAngle, hipAnkleGap, thighAngle];
   }
 
   List<double> _plankStyleFeatures(Pose pose) {

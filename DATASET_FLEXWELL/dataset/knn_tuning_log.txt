@@ -1,0 +1,99 @@
+exercise     config                        CV acc    +/-
+----------------------------------------------------------
+Lunge        KNN k=3 uniform                0.692  0.040
+Lunge        KNN k=3 distance               0.686  0.037
+Lunge        KNN k=5 uniform (CURRENT)      0.697  0.041
+Lunge        KNN k=5 distance               0.696  0.039
+Lunge        KNN k=7 uniform                0.700  0.038
+Lunge        KNN k=7 distance               0.696  0.033
+Lunge        KNN k=9 uniform                0.703  0.048
+Lunge        KNN k=9 distance               0.698  0.041
+Lunge        KNN k=11 uniform               0.702  0.048
+Lunge        KNN k=11 distance              0.700  0.039
+Lunge        KNN k=15 uniform               0.709  0.048
+Lunge        KNN k=15 distance              0.701  0.039
+Lunge        SVM (RBF)                      0.712  0.055
+             --> best KNN for Lunge: k=15, uniform (0.709) vs SVM 0.712
+
+Plank        KNN k=3 uniform                0.784  0.069
+Plank        KNN k=3 distance               0.775  0.069
+Plank        KNN k=5 uniform (CURRENT)      0.801  0.069
+Plank        KNN k=5 distance               0.786  0.070
+Plank        KNN k=7 uniform                0.812  0.055
+Plank        KNN k=7 distance               0.796  0.062
+Plank        KNN k=9 uniform                0.827  0.066
+Plank        KNN k=9 distance               0.805  0.061
+Plank        KNN k=11 uniform               0.827  0.071
+Plank        KNN k=11 distance              0.812  0.062
+Plank        KNN k=15 uniform               0.846  0.058
+Plank        KNN k=15 distance              0.822  0.073
+Plank        SVM (RBF)                      0.867  0.044
+             --> best KNN for Plank: k=15, uniform (0.846) vs SVM 0.867
+
+Side Plank   KNN k=3 uniform                0.799  0.025
+Side Plank   KNN k=3 distance               0.794  0.029
+Side Plank   KNN k=5 uniform (CURRENT)      0.805  0.024
+Side Plank   KNN k=5 distance               0.803  0.027
+Side Plank   KNN k=7 uniform                0.803  0.026
+Side Plank   KNN k=7 distance               0.806  0.026
+Side Plank   KNN k=9 uniform                0.804  0.027
+Side Plank   KNN k=9 distance               0.810  0.024
+Side Plank   KNN k=11 uniform               0.801  0.029
+Side Plank   KNN k=11 distance              0.808  0.025
+Side Plank   KNN k=15 uniform               0.802  0.030
+Side Plank   KNN k=15 distance              0.808  0.025
+Side Plank   SVM (RBF)                      0.761  0.041
+             --> best KNN for Side Plank: k=15, uniform (0.802) vs SVM 0.761
+
+Pull-Up      KNN k=3 uniform                0.662  0.110
+Pull-Up      KNN k=3 distance               0.579  0.096
+Pull-Up      KNN k=5 uniform (CURRENT)      0.703  0.114
+Pull-Up      KNN k=5 distance               0.569  0.096
+Pull-Up      KNN k=7 uniform                0.714  0.099
+Pull-Up      KNN k=7 distance               0.569  0.096
+Pull-Up      KNN k=9 uniform                0.774  0.102
+Pull-Up      KNN k=9 distance               0.569  0.096
+Pull-Up      KNN k=11 uniform               0.774  0.102
+Pull-Up      KNN k=11 distance              0.569  0.096
+Pull-Up      KNN k=15 uniform               0.774  0.102
+Pull-Up      KNN k=15 distance              0.579  0.099
+Pull-Up      SVM (RBF)                      0.765  0.137
+             --> best KNN for Pull-Up: k=15, uniform (0.774) vs SVM 0.765
+
+Push-Up      KNN k=3 uniform                0.858  0.049
+Push-Up      KNN k=3 distance               0.858  0.049
+Push-Up      KNN k=5 uniform (CURRENT)      0.858  0.049
+Push-Up      KNN k=5 distance               0.858  0.049
+Push-Up      KNN k=7 uniform                0.872  0.058
+Push-Up      KNN k=7 distance               0.872  0.058
+Push-Up      KNN k=9 uniform                0.859  0.048
+Push-Up      KNN k=9 distance               0.859  0.048
+Push-Up      KNN k=11 uniform               0.847  0.051
+Push-Up      KNN k=11 distance              0.859  0.048
+Push-Up      KNN k=15 uniform               0.847  0.051
+Push-Up      KNN k=15 distance              0.859  0.048
+Push-Up      SVM (RBF)                      0.859  0.062
+             --> best KNN for Push-Up: k=15, uniform (0.847) vs SVM 0.859
+
+==========================================================
+MEAN ACROSS 5 EXERCISES
+  KNN k=5 uniform (current) : 0.773
+  KNN k=5 distance          : 0.742
+  SVM (RBF)                 : 0.793
+
+  KNN configs ranked by mean CV:
+    k=15 uniform   0.796
+    k= 9 uniform   0.793
+    k=11 uniform   0.790
+    k= 7 uniform   0.780
+    k= 5 uniform   0.773
+    k= 3 uniform   0.759
+    k=15 distance  0.754
+    k=11 distance  0.750
+    k= 9 distance  0.748
+    k= 7 distance  0.748
+    k= 5 distance  0.742
+    k= 3 distance  0.738
+
+  Best KNN config beats SVM? True
+  Per-exercise best KNN (oracle) mean CV: 0.802  vs SVM 0.793

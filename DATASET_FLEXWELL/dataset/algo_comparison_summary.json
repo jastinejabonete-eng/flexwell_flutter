@@ -1,0 +1,44 @@
+{
+  "exercises": [
+    "Lunge",
+    "Plank",
+    "Side Plank",
+    "Pull-Up",
+    "Push-Up"
+  ],
+  "algorithms": [
+    "KNN (k=5)",
+    "SVM (RBF)",
+    "Random Forest",
+    "Decision Tree",
+    "Gradient Boosting",
+    "Naive Bayes",
+    "Logistic Reg."
+  ],
+  "note": "Squat excluded (insufficient data). Grouped by video_id.",
+  "mean_cv_accuracy_by_algorithm": {
+    "Decision Tree": 0.717,
+    "Gradient Boosting": 0.762,
+    "KNN (k=5)": 0.784,
+    "Logistic Reg.": 0.749,
+    "Naive Bayes": 0.744,
+    "Random Forest": 0.759,
+    "SVM (RBF)": 0.8
+  },
+  "mean_f1_by_algorithm": {
+    "Decision Tree": 0.709,
+    "Gradient Boosting": 0.779,
+    "KNN (k=5)": 0.839,
+    "Logistic Reg.": 0.78,
+    "Naive Bayes": 0.839,
+    "Random Forest": 0.758,
+    "SVM (RBF)": 0.835
+  },
+  "best_per_exercise": {
+    "Lunge": "KNN (k=5)",
+    "Plank": "SVM (RBF)",
+    "Side Plank": "Gradient Boosting",
+    "Pull-Up": "SVM (RBF)",
+    "Push-Up": "Naive Bayes"
+  }
+}

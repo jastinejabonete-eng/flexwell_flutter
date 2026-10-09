@@ -180,13 +180,33 @@ def to_pixel_landmarks(landmarks, width, height):
             self.y = y
     return [_Pt(l.x * width, l.y * height) for l in landmarks]
 def features_lunge(lm):
+    """Lunge feature vector, LEFT-SIDE camera. 5 features.
+
+    Validated in lunge_validate.py with leakage-free grouped CV:
+      2 features (knee + torso lean) -> 0.711 mean / 0.726 holdout
+      5 features (below)            -> 0.823 mean / 0.863 holdout
+    The 3 added features are the shin angle, the hip-to-ankle gap, and the
+    front thigh angle; they capture knee-over-toe position and lunge depth,
+    which the original two features could not separate. The 4/5-feature set
+    beat the 2-feature set on 10/10 random video-grouped splits.
+
+    MUST stay numerically identical to _lungeFeatures in pose_analyzer.dart.
+    """
     hip, knee, ankle = lm[L_HIP], lm[L_KNEE], lm[L_ANKLE]
     shoulder = lm[L_SHOULDER]
     front_knee_angle = calculate_angle(hip, knee, ankle)
     dx = shoulder.x - hip.x
     dy = shoulder.y - hip.y
     torso_lean_angle = abs(math.degrees(math.atan2(dx, -dy)))
-    return [front_knee_angle, torso_lean_angle]
+    # front shin angle from vertical (knee-over-ankle): ~0 = shin vertical,
+    # larger = knee drifting forward of the foot.
+    shin_angle = abs(math.degrees(math.atan2(knee.x - ankle.x, ankle.y - knee.y)))
+    # normalized hip-to-ankle vertical gap over trunk length (lunge depth).
+    trunk = euclidean(shoulder, hip)
+    hip_ankle_gap = _div(ankle.y - hip.y, trunk)
+    # front thigh angle from vertical (depth / stance).
+    thigh_angle = abs(math.degrees(math.atan2(knee.x - hip.x, knee.y - hip.y)))
+    return [front_knee_angle, torso_lean_angle, shin_angle, hip_ankle_gap, thigh_angle]
 def features_plank_style(lm):
     shoulder, hip, ankle = lm[L_SHOULDER], lm[L_HIP], lm[L_ANKLE]
     elbow = lm[L_ELBOW]
@@ -607,13 +627,14 @@ def main():
                         print(f"  WARNING: 0 usable rows from {video_path} -- it will contribute nothing to training")
                     all_rows.extend(rows)
     # Columns: exercise, label, feature_1, feature_2, [feature_3], video_id, extras.
-    # Plank/Side Plank emit a 3rd feature (pk_shoulder_elbow_dx); the rest emit 2.
+    # Lunge emits 5 features; Plank/Side Plank emit 3; the rest emit 2.
     max_features = max((len(r) for r in all_rows), default=6) - 3  # minus exercise,label,video_id,extras
     feature_cols = [f"feature_{i+1}" for i in range(max_features)]
     columns = ["exercise", "label"] + feature_cols + ["video_id", "extras"]
-    # Rows are ragged: 2-feature exercises emit 6 fields, 3-feature exercises
-    # (Plank/Side Plank) emit 7. Pad every short row with None so pandas can
-    # build a rectangular frame instead of raising a column-count mismatch.
+    # Rows are ragged: 2-feature exercises emit 6 fields, 3-feature (Plank/Side
+    # Plank) emit 7, 5-feature (Lunge) emit 9. Pad every short row with None so
+    # pandas can build a rectangular frame instead of raising a column-count
+    # mismatch.
     ncols = len(columns)
     # Rows are built as [exercise, label, f1, f2, (f3), video_id, extras].
     # 2-feature rows have 6 fields, 3-feature rows have 7. The missing field for
