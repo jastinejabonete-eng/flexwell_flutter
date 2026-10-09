@@ -25,15 +25,15 @@ class _CameraGuide {
 const List<_CameraGuide> _guides = [
   _CameraGuide(
     'Squat',
-    'Front view',
-    'Face the camera with your whole body in frame. Your shoulders, hips and knees all need to stay visible.',
+    'Left side view',
+    'Turn so your left side faces the camera. Your left shoulder, hip, knee and ankle all need to stay visible.',
     repBased: true,
     calibrates: true,
   ),
   _CameraGuide(
     'Push-Up',
-    'Front view',
-    'Face the camera so both shoulders and both elbows stay visible through the whole movement.',
+    'Left side view',
+    'Turn so your left side faces the camera. Your left shoulder, elbow, wrist, hip and ankle should stay visible through the whole movement.',
     repBased: true,
     calibrates: true,
   ),
@@ -80,6 +80,7 @@ const List<_Badge> _badges = [
   _Badge(Icons.shield_rounded, 'Iron Core', 'Hold a Plank for 60 seconds.'),
   _Badge(Icons.verified_rounded, 'Form Master', 'Score over 90% accuracy in a Squat session.'),
   _Badge(Icons.bolt_rounded, 'Gym Warrior', 'Scan all 6 exercises.'),
+  _Badge(Icons.star_rounded, 'Flawless Form', 'Finish 5 reps with perfect form in one session.'),
   _Badge(Icons.handshake_rounded, 'Share', 'Tap Share on the Badges tab.'),
 ];
 
@@ -101,7 +102,7 @@ class _Tone {
   _Tone(this.isDark)
       : text = isDark ? Colors.white : AppColors.lightText,
         sub = isDark ? Colors.white70 : AppColors.lightTextSecondary,
-        card = isDark ? const Color(0xFF1E232A) : Colors.white,
+        card = isDark ? AppColors.darkCardFilled : Colors.white,
         border = isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.lightBorder,
         // Volt green is unreadable as text on white, so light mode uses the brand blue.
         accent = isDark ? AppColors.accent : AppColors.primary;
@@ -175,11 +176,11 @@ class _UserManualScreenState extends State<UserManualScreen> {
           _faq(
             t,
             'The skeleton stays red the whole time',
-            'Check your camera angle against the guide above. The form check expects a front, back or left-side view depending on the exercise, so the wrong angle can read as bad form.',
+            'Check your camera angle against the guide above. The form check expects a left-side or back view depending on the exercise, so the wrong angle can read as bad form.',
           ),
           _faq(
             t,
-            'It says "Pose landmarks not reliable"',
+            'It says "Can\'t see you clearly"',
             'Some of the joints it needs are hidden or too dim to track. Step back, turn on more light, and make sure your whole body is in frame.',
           ),
           _faq(
@@ -287,7 +288,7 @@ class _UserManualScreenState extends State<UserManualScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: t.isDark
-              ? [const Color(0xFF1E232A), const Color(0xFF121418)]
+              ? [AppColors.darkCardFilled, AppColors.darkBackground]
               : [const Color(0xFF0D47A1), const Color(0xFF1976D2)],
         ),
         borderRadius: BorderRadius.circular(20),
@@ -467,7 +468,7 @@ class _UserManualScreenState extends State<UserManualScreen> {
                         Text(
                           good
                               ? 'On-screen message: "Good form"'
-                              : 'On-screen message (Squat): "Check your depth and keep your knees tracking over your toes"',
+                              : 'On-screen message (Squat): "Check your depth and keep your chest up"',
                           style: TextStyle(fontSize: 13, height: 1.4, color: t.sub),
                         ),
                       ],

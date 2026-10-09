@@ -138,16 +138,12 @@ const List<_TermSection> _sections = [
     ),
     _TermItem(
       'The underlying AI pose estimation model and the posture classification '
-      'dataset were trained using standard anatomical silhouettes and typical '
-      'biomechanical movements. As a result, the application may experience '
-      'reduced accuracy, fail to detect key body landmarks, or produce false '
-      '"Incorrect" posture warnings for individuals with non-standard body '
-      'proportions (such as users who are significantly overweight) or '
-      'persons with physical disabilities (including musculoskeletal '
-      'deformities, missing limbs, or the use of mobility aids). The '
-      "system's mathematical joint-ratio calculations may not function "
-      'properly under these physical conditions.',
-      lead: 'Body Proportions and Physical Disabilities: ',
+      'dataset were trained on standard anatomical silhouettes and typical '
+      'biomechanical movements. Accuracy may therefore be reduced, key body '
+      'landmarks may go undetected, or false "Incorrect" posture warnings may '
+      'be produced for body types, physical proportions, or movement patterns '
+      'that differ from those represented in the training data.',
+      lead: 'Body Types and Movement Patterns: ',
     ),
   ]),
   _TermSection('6. Limitation of Liability', [
@@ -180,6 +176,18 @@ const List<_TermSection> _sections = [
       'Conditions at any time. Continued use of the FlexWell application '
       'following any changes constitutes your acceptance of the revised '
       'terms.',
+    ),
+  ]),
+  _TermSection('9. Governing Law and Contact', [
+    _TermItem(
+      'These Terms and Conditions shall be governed by and construed in '
+      'accordance with the laws of the Republic of the Philippines.',
+      lead: 'Governing Law: ',
+    ),
+    _TermItem(
+      'For questions or concerns regarding these Terms, please contact the '
+      'FlexWell development team at City College of Calamba.',
+      lead: 'Contact: ',
     ),
   ]),
 ];
@@ -223,7 +231,7 @@ class _TermsScreenState extends State<TermsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryText = isDark ? Colors.white : Colors.black87;
     final secondaryText = isDark ? Colors.white70 : Colors.grey.shade700;
-    final cardColor = isDark ? const Color(0xFF1E232A) : Colors.white;
+    final cardColor = isDark ? AppColors.darkCardFilled : Colors.white;
     final borderColor = isDark
         ? Colors.white.withValues(alpha: 0.08)
         : Colors.grey.shade300;
@@ -278,7 +286,7 @@ class _TermsScreenState extends State<TermsScreen> {
                             section.title,
                             style: TextStyle(
                               color: isDark
-                                  ? const Color(0xFFCCFF00)
+                                  ? AppColors.accent
                                   : AppColors.primary,
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
@@ -316,103 +324,103 @@ class _TermsScreenState extends State<TermsScreen> {
               ),
             ),
             if (widget.requireAcceptance)
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  border: Border(top: BorderSide(color: borderColor)),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CheckboxListTile(
-                      value: _agreed,
-                      onChanged: (v) => setState(() => _agreed = v ?? false),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
-                      activeColor: AppColors.correct,
-                      title: Text(
-                        'I have read and agree to the Terms and Conditions.',
-                        style: TextStyle(
-                          color: primaryText,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    // Stacked full-width buttons: labels never wrap or clip on
-                    // narrow screens or with large system font sizes.
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(52),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          backgroundColor: const Color(0xFFCCFF00),
-                          foregroundColor: Colors.black,
-                          disabledBackgroundColor:
-                              isDark ? Colors.white12 : Colors.grey.shade300,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+              Material(
+                color: cardColor,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Divider(height: 1, color: borderColor),
+                      CheckboxListTile(
+                        value: _agreed,
+                        onChanged: (v) => setState(() => _agreed = v ?? false),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                        activeColor: AppColors.correct,
+                        title: Text(
+                          'I have read and agree to the Terms and Conditions.',
+                          style: TextStyle(
+                            color: primaryText,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        onPressed: _agreed && !_saving ? _accept : null,
-                        child: _saving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.black,
-                                ),
-                              )
-                            : const FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  'ACCEPT & CONTINUE',
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.8,
+                      ),
+                      // Stacked full-width buttons: labels never wrap or clip on
+                      // narrow screens or with large system font sizes.
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(52),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            backgroundColor: AppColors.accent,
+                            foregroundColor: Colors.black,
+                            disabledBackgroundColor:
+                                isDark ? Colors.white12 : Colors.grey.shade300,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          onPressed: _agreed && !_saving ? _accept : null,
+                          child: _saving
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.black,
+                                  ),
+                                )
+                              : const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    'ACCEPT & CONTINUE',
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.8,
+                                    ),
                                   ),
                                 ),
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(48),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
-                          side: BorderSide(
-                            color:
-                                isDark ? Colors.white24 : Colors.grey.shade400,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
                         ),
-                        onPressed: _decline,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            'DECLINE',
-                            maxLines: 1,
-                            softWrap: false,
-                            style: TextStyle(
-                              color: primaryText,
-                              fontWeight: FontWeight.bold,
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(48),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10),
+                            side: BorderSide(
+                              color:
+                                  isDark ? Colors.white24 : Colors.grey.shade400,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          onPressed: _decline,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'DECLINE',
+                              maxLines: 1,
+                              softWrap: false,
+                              style: TextStyle(
+                                color: primaryText,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
           ],

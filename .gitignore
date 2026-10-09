@@ -71,3 +71,9 @@ DATASET_FLEXWELL/dataset/**/*.MP4
 DATASET_FLEXWELL/Dataset Exercise Quality-wise/
 DATASET_FLEXWELL/Dataset Exercise Quality-wise.zip
 DATASET_FLEXWELL/**/__pycache__/
+
+# Training scratch/backups (regenerable, not source)
+*.bak
+DATASET_FLEXWELL/dataset/extraction_log.txt
+DATASET_FLEXWELL/dataset/tempCodeRunnerFile.py
+DATASET_FLEXWELL/dataset/__pycache__/

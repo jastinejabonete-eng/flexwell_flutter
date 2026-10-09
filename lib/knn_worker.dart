@@ -153,8 +153,12 @@ class KnnWorker {
       _pending.remove(id);
       _timeouts++;
       if (_timeouts >= _maxConsecutiveTimeouts) {
-        debugPrint('KnnWorker unresponsive, disabling it');
+        debugPrint('KnnWorker unresponsive, disabling it '
+            '(KNN now runs on the main isolate)');
         _commands = null;
+      } else if (kDebugMode) {
+        debugPrint('KnnWorker timeout $_timeouts/$_maxConsecutiveTimeouts '
+            '(temporary main-isolate fallback)');
       }
       return onMainIsolate();
     });

@@ -611,7 +611,26 @@ def main():
     max_features = max((len(r) for r in all_rows), default=6) - 3  # minus exercise,label,video_id,extras
     feature_cols = [f"feature_{i+1}" for i in range(max_features)]
     columns = ["exercise", "label"] + feature_cols + ["video_id", "extras"]
-    df = pd.DataFrame(all_rows, columns=columns)
+    # Rows are ragged: 2-feature exercises emit 6 fields, 3-feature exercises
+    # (Plank/Side Plank) emit 7. Pad every short row with None so pandas can
+    # build a rectangular frame instead of raising a column-count mismatch.
+    ncols = len(columns)
+    # Rows are built as [exercise, label, f1, f2, (f3), video_id, extras].
+    # 2-feature rows have 6 fields, 3-feature rows have 7. The missing field for
+    # short rows is the optional feature_3, which sits BEFORE video_id/extras --
+    # so pad it in the middle, not at the end, or video_id/extras shift left and
+    # video_id ends up empty. Insert the missing feature slot right before the
+    # last two fields (video_id, extras).
+    padded = []
+    for r in all_rows:
+        if len(r) == ncols:
+            padded.append(r)
+        else:
+            missing = ncols - len(r)
+            head = r[:-2]                       # exercise, label, existing features
+            tail = r[-2:]                       # video_id, extras
+            padded.append(head + [None] * missing + tail)
+    df = pd.DataFrame(padded, columns=columns)
 
     rest = pd.Series(VIDEO_REST_VALUES, name="rest_value")
     if not rest.empty:
@@ -650,9 +669,15 @@ def main():
     keep = pd.Series(True, index=df.index)
     for ex, g in df.groupby("exercise"):
         for col in all_feature_cols:
-            m, sd = g[col].mean(), g[col].std()
+            # feature_3 is None for 2-feature exercises; skip empty columns so
+            # mean() doesn't choke on an all-None series.
+            s = pd.to_numeric(g[col], errors="coerce")
+            valid = s.dropna()
+            if valid.empty:
+                continue
+            m, sd = valid.mean(), valid.std()
             if sd and sd > 0:
-                keep[g.index[(g[col] - m).abs() > OUTLIER_STD * sd]] = False
+                keep[g.index[(s - m).abs() > OUTLIER_STD * sd]] = False
     dropped = int((~keep).sum())
     if dropped:
         print(f"\nOutlier trim: dropping {dropped} row(s) beyond {OUTLIER_STD:.0f} std:")
@@ -668,6 +693,8 @@ def main():
     print(f"\nSaved {len(df)} labeled feature rows to {OUTPUT_CSV}")
     print(df.groupby(["exercise", "label"]).size())
     print(f"\nUnique source videos per exercise/label:")
-    print(df.groupby(["exercise", "label"])["video_id"].nunique())
+    # Cast to str so any residual None/NaN video_id doesn't break nunique().
+    print(df.assign(video_id=df["video_id"].astype(str))
+            .groupby(["exercise", "label"])["video_id"].nunique())
 if __name__ == "__main__":
     main()

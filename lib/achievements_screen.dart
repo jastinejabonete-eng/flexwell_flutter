@@ -113,7 +113,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.75),
       builder: (dialogContext) {
-        final cardBg = isDark ? const Color(0xFF1E232A) : Colors.white;
+        final cardBg = isDark ? AppColors.darkCardFilled : Colors.white;
         final subtextColor = isDark ? Colors.white70 : AppColors.lightTextSecondary;
 
         return Dialog(
@@ -150,7 +150,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: unlocked ? const Color(0xFFFFD700) : Colors.grey.shade400,
+                    color: unlocked ? AppColors.gold : Colors.grey.shade400,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -171,7 +171,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: unlocked
-                          ? const Color(0xFFFFD700)
+                          ? AppColors.gold
                           : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
                       foregroundColor: unlocked ? Colors.black : Colors.grey.shade600,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -203,8 +203,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     double size = 60,
     double iconSize = 28,
   }) {
-    const goldColor = Color(0xFFFFD700);
-    const slateColor = Color(0xFF94A3B8);
+    const goldColor = AppColors.gold;
+    const slateColor = AppColors.badgeLocked;
 
     return CustomPaint(
       size: Size(size, size * 1.15),
@@ -247,7 +247,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     {required bool hasError}
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1E232A) : Colors.white;
+    final cardColor = isDark ? AppColors.darkCardFilled : Colors.white;
     final primaryTextColor = isDark ? Colors.white : AppColors.lightText;
     final secondaryTextColor = isDark ? Colors.white54 : AppColors.lightTextSecondary;
 
@@ -399,7 +399,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isUnlocked
-                            ? const Color(0xFFFFD700).withValues(alpha: 0.5)
+                            ? AppColors.gold.withValues(alpha: 0.5)
                             : (isDark ? Colors.transparent : Colors.grey.shade300),
                       ),
                       boxShadow: [

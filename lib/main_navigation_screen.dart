@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dashboard_screen.dart';
+import 'app_colors.dart';
 import 'tutorials_screen.dart';
 import 'achievements_screen.dart';
 import 'user_manual_screen.dart'; // <--- Import User Manual
@@ -45,7 +46,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           child: Container(
             height: 64,
             decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
+              color: AppColors.navBarBackground,
               borderRadius: BorderRadius.circular(32),
               boxShadow: [
                 BoxShadow(
@@ -68,7 +69,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFF1E293B) : Colors.transparent,
+                      color: isSelected ? AppColors.navBarActivePill : Colors.transparent,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Column(
@@ -79,8 +80,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                           item['icon'] as IconData,
                           size: 18,
                           color: isSelected
-                              ? const Color(0xFFCCFF00) // Volt green active highlight
-                              : const Color(0xFF64748B),
+                              ? AppColors.accent // Volt green active highlight
+                              : AppColors.navBarInactive,
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -89,8 +90,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             fontSize: 9,
                             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                             color: isSelected
-                                ? const Color(0xFFCCFF00)
-                                : const Color(0xFF64748B),
+                                ? AppColors.accent
+                                : AppColors.navBarInactive,
                           ),
                         ),
                       ],

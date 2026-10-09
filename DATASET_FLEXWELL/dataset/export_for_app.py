@@ -20,11 +20,13 @@ warns loudly if an exercise's exported width looks unexpected.
 
 import csv
 import json
+from pathlib import Path
 
 FEATURE_COLS = ["feature_1", "feature_2", "feature_3"]
+DATASET_DIR = Path(__file__).resolve().parent
 
 
-def load_rows(path="features.csv"):
+def load_rows(path=DATASET_DIR / "features.csv"):
     with open(path, newline="") as f:
         return list(csv.DictReader(f))
 
@@ -35,7 +37,7 @@ def example_features(row):
 
 
 def main():
-    rows = load_rows("features.csv")
+    rows = load_rows()
 
     # Group rows by exercise.
     by_exercise = {}
@@ -71,7 +73,8 @@ def main():
             ],
         }
 
-    with open("knn_training_data.json", "w") as f:
+    output_path = DATASET_DIR / "knn_training_data.json"
+    with open(output_path, "w") as f:
         json.dump(output, f, indent=2)
 
     print("Wrote knn_training_data.json")

@@ -16,6 +16,19 @@ import 'knn_worker.dart';
 import 'form_smoother.dart';
 import 'achievement_service.dart';
 
+/// Built-in title/icon for each achievement id, used to celebrate a newly
+/// unlocked badge right after a session. Kept in sync with the user manual
+/// and the achievements catalog. Offline-safe (no Firestore read needed).
+const Map<String, (String, IconData)> _kAchievementMeta = {
+  'first_milestone': ('First Milestone', Icons.workspace_premium_rounded),
+  'iron_core': ('Iron Core', Icons.shield_rounded),
+  'form_master': ('Form Master', Icons.verified_rounded),
+  'flawless_form': ('Flawless Form', Icons.star_rounded),
+  'gym_warrior': ('Gym Warrior', Icons.bolt_rounded),
+  'determination': ('Determination', Icons.fitness_center_rounded),
+  'share': ('Share', Icons.handshake_rounded),
+};
+
 class CameraScreen extends StatefulWidget {
   final String exercise;
   const CameraScreen({super.key, required this.exercise});
@@ -104,10 +117,21 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   static const ResolutionPreset _resolution = ResolutionPreset.low;
   List<CameraDescription>? _cachedCameras;
 
-  // Frame skipper: the camera delivers ~30 fps, so 3 -> ~10 fps analysed.
-  // Constants elsewhere (hold grace, dwell frames, verdict hold) assume ~10 fps;
-  // if you use 5 (~6 fps), scale those down.
-  static const int _processEveryNthFrame = 3;
+  // Adaptive frame skipping. The camera delivers ~30 fps; we analyse every
+  // _processEveryNthFrame-th frame. Start at 3 (~10 fps), which the rep-hold
+  // constants elsewhere (hold grace, dwell frames, verdict hold) assume. If
+  // ML Kit + KNN consistently overrun the frame budget, the busy gate drops
+  // frames anyway, so raise the interval to rebuild the overlay at a rate the
+  // device can actually sustain, and lower it again when processing is fast.
+  int _processEveryNthFrame = 3;
+  static const int _minFrameSkip = 3;
+  static const int _maxFrameSkip = 8;
+  // A processed frame should finish within this many ms to keep ~10 fps. An EMA
+  // of the full process time decides the interval.
+  static const double _frameBudgetMs = 120;
+  double _avgProcessMs = _frameBudgetMs;
+  int _skipCheckCountdown = _skipCheckEvery;
+  static const int _skipCheckEvery = 15; // processed frames between adjustments
   int _frameCounter = 0;
 
   // Odd window: a full window can't tie. Incorrect is shown only when strictly
@@ -115,6 +139,14 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   final FormSmoother _displaySmoother = FormSmoother(windowSize: 5, minFrames: 3);
   int _missedFrames = 0;
   static const int _maxMissedFrames = 5;
+
+  // Dropout hold: how many consecutive low-confidence frames to keep showing
+  // the last good (smoothed) skeleton before blanking it. Stops the skeleton
+  // blinking out for a single jittery frame while still clearing when tracking
+  // is genuinely lost.
+  static const int _poseHoldFrames = 3;
+  int _unreliableStreak = 0;
+  Pose? _lastGoodPose;
 
   @override
   void initState() {
@@ -159,7 +191,12 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     _poseAnalyzer.resetCalibration();
     _displaySmoother.reset();
     _frameCounter = 0;
+    _processEveryNthFrame = _minFrameSkip; // let it re-adapt for this device
+    _avgProcessMs = _frameBudgetMs;
+    _skipCheckCountdown = _skipCheckEvery;
     _missedFrames = 0;
+    _unreliableStreak = 0;
+    _lastGoodPose = null;
     _isInDownPhase = false;
     _holdStart = null;
     _holdInterruptedAt = null;
@@ -290,7 +327,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     if (_isBusy || _isEnding || !mounted) return;
     if (++_frameCounter % _processEveryNthFrame != 0) return; // frame skipper
     _isBusy = true;
-    final sw = kDebugMode ? (Stopwatch()..start()) : null;
+    // Total process time is measured in both debug and release so the adaptive
+    // frame-skip logic works on real devices, not just debug builds.
+    final sw = Stopwatch()..start();
 
     try {
       final inputImage = _inputImageFromCameraImage(image);
@@ -304,7 +343,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
           : Size(image.width.toDouble(), image.height.toDouble());
 
       final poses = await _poseDetector.processImage(inputImage);
-      final mlMs = sw?.elapsedMilliseconds;
+      final mlMs = sw.elapsedMilliseconds;
       if (!mounted || _isEnding) return;
 
       if (poses.isNotEmpty) {
@@ -312,7 +351,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
         final analysis = await _poseAnalyzer.analyze(widget.exercise, pose);
         if (!mounted || _isEnding) return; // state may have changed during the await
         if (kDebugMode) {
-          debugPrint('[perf] mlkit=${mlMs}ms total=${sw!.elapsedMilliseconds}ms');
+          debugPrint('[perf] mlkit=${mlMs}ms total=${sw.elapsedMilliseconds}ms');
         }
 
         if (analysis.landmarksReliable) {
@@ -379,18 +418,36 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
               ? _displaySmoother.add(analysis.isCorrect)
               : analysis.isCorrect; // Lunge/Plank are already smoothed in the analyzer
         }
+        // Sticky reliability: once the skeleton is showing, keep showing it even
+        // if confidence momentarily dips. Only drop out when it stays below the
+        // clear-cutoff for a few frames in a row (see _missedFrames logic below).
+        if (analysis.landmarksReliable) {
+          _unreliableStreak = 0;
+          _lastGoodPose = analysis.smoothedPose ?? pose;
+        } else {
+          _unreliableStreak++;
+        }
+        final holdGoodPose =
+            !analysis.landmarksReliable && _unreliableStreak < _poseHoldFrames;
+        final drawPose = analysis.landmarksReliable
+            ? (analysis.smoothedPose ?? pose)
+            : (holdGoodPose ? _lastGoodPose : null);
         // Always show the analyzer's message (correction / calibrating /
         // "can't see you"), so stale text never stays on screen.
         _overlay.value = _OverlayState(
-          pose: pose,
+          pose: drawPose,
           imageSize: displaySize,
           isCorrect: isCorrect,
-          landmarksOk: analysis.landmarksReliable,
+          landmarksOk: analysis.landmarksReliable || holdGoodPose,
           guideText: analysis.message,
         );
       } else {
         _registerHoldInterruption();
         _missedFrames++;
+        // Person fully out of frame: no reliable pose to hold, so clear the
+        // hold state (a re-entry needs a fresh good pose, not a stale one).
+        _unreliableStreak = _poseHoldFrames;
+        _lastGoodPose = null;
         if (_missedFrames >= _maxMissedFrames) {
           final previous = _overlay.value;
           _overlay.value = _OverlayState(
@@ -406,6 +463,34 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
       debugPrint('Error processing image: $e\n$st');
     } finally {
       _isBusy = false;
+      _updateFrameSkip(sw.elapsedMilliseconds.toDouble());
+    }
+  }
+
+  /// Feed the just-measured process time into an EMA and, every
+  /// [_skipCheckEvery] processed frames, raise the skip interval while the
+  /// device is over budget and lower it again when it has headroom. Smoothing
+  /// over many frames keeps a single ML Kit hiccup from stutter-stepping the
+  /// analysis rate.
+  void _updateFrameSkip(double elapsedMs) {
+    _avgProcessMs = 0.8 * _avgProcessMs + 0.2 * elapsedMs;
+    if (--_skipCheckCountdown > 0) return;
+    _skipCheckCountdown = _skipCheckEvery;
+
+    final int previous = _processEveryNthFrame;
+    if (_avgProcessMs > _frameBudgetMs) {
+      // Over budget: analyse fewer frames so the overlay update keeps up.
+      if (_processEveryNthFrame < _maxFrameSkip) _processEveryNthFrame++;
+    } else if (_avgProcessMs < _frameBudgetMs * 0.6) {
+      // Comfortable headroom: restore responsiveness.
+      if (_processEveryNthFrame > _minFrameSkip) _processEveryNthFrame--;
+    }
+    if (_processEveryNthFrame != previous) {
+      _frameCounter = 0; // realign the modulo window to the new interval
+      if (kDebugMode) {
+        debugPrint('[perf] frame skip $previous->$_processEveryNthFrame '
+            '(avg ${_avgProcessMs.toStringAsFixed(0)}ms)');
+      }
     }
   }
 
@@ -464,19 +549,22 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
 
     final accuracy = _totalFrames > 0 ? (_correctFrames * 100 / _totalFrames).round() : 0;
 
-    // Fire-and-forget background write to Firebase via AchievementService
-    unawaited(AchievementService.recordSession(
+    // Save the session and evaluate achievements. Awaiting here (rather than
+    // fire-and-forget) lets us celebrate any newly unlocked badge right away;
+    // recordSession has internal timeouts and its heavy write is unawaited, so
+    // this stays snappy.
+    final unlocked = await AchievementService.recordSession(
       exercise: widget.exercise,
       accuracy: accuracy,
       reps: _repCount,
       longestHold: _longestHold,
       reliableFrames: _totalFrames,
       perfectReps: _perfectRepCount,
-    ));
+    );
 
     if (!mounted) return;
-    
-    Navigator.pushReplacement(
+
+    await Navigator.pushReplacement(
       context,
       fadeRoute(
         SummaryScreen(
@@ -487,6 +575,99 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
           isRepBased: PoseAnalyzer.repBasedExercises.contains(widget.exercise),
           perfectReps: _perfectRepCount,
         ),
+      ),
+    );
+
+    if (unlocked.isNotEmpty && mounted) {
+      _showUnlockCelebration(unlocked);
+    }
+  }
+
+  /// Shows a celebratory dialog for every achievement unlocked this session.
+  void _showUnlockCelebration(List<String> ids) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColors.darkCardFilled : Colors.white;
+    final text = isDark ? Colors.white : AppColors.lightText;
+    final sub = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: bg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        contentPadding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: AppColors.gold,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _kAchievementMeta[ids.first]?.$2 ?? Icons.emoji_events_rounded,
+                color: Colors.black,
+                size: 40,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              ids.length == 1 ? 'Badge Unlocked!' : '${ids.length} Badges Unlocked!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: text,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 16),
+            for (final id in ids)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  children: [
+                    Icon(_kAchievementMeta[id]?.$2 ?? Icons.emoji_events_rounded,
+                        color: AppColors.gold, size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _kAchievementMeta[id]?.$1 ?? id,
+                        style: TextStyle(
+                          color: text,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 6),
+            Text(
+              'Keep it up — check the Badges tab to see them all.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: sub, fontSize: 12.5, height: 1.4),
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Awesome!',
+                  style: TextStyle(fontWeight: FontWeight.w900)),
+            ),
+          ),
+        ],
       ),
     );
   }

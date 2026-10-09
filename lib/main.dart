@@ -38,6 +38,12 @@ class FlexWellApp extends StatelessWidget {
           title: 'FlexWell',
           debugShowCheckedModeBanner: false,
           themeMode: currentTheme,
+          // Defaults to Duration.zero, which is why the light/dark toggle
+          // snapped instantly and janked (all the heavy dark-mode box-shadows
+          // rebuild in a single frame). A short duration cross-fades the whole
+          // theme, spreading that rebuild across the animation.
+          themeAnimationDuration: const Duration(milliseconds: 200),
+          themeAnimationCurve: Curves.easeInOut,
           
           // Light Mode Theme
           theme: ThemeData(

@@ -54,7 +54,7 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
       'videoAsset': 'assets/videos/plank_tutorial.mp4',
     },
     {
-      'exercise': 'Side-Plank',
+      'exercise': 'Side Plank',
       'title': 'ABDOMINAL FOCUS',
       'subtitle': 'Static Side-Planks',
       'imageAsset': 'assets/images/sideplank_bg.jpg',
@@ -66,7 +66,7 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : AppColors.lightText;
-    final cardBg = isDark ? const Color(0xFF1E232A) : Colors.white;
+    final cardBg = isDark ? AppColors.darkCardFilled : Colors.white;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
@@ -151,7 +151,7 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
                             Text(
                               title,
                               style: const TextStyle(
-                                color: Color(0xFFCCFF00),
+                                color: AppColors.accent,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w900,
                                 fontStyle: FontStyle.italic,
@@ -175,7 +175,7 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            color: isExpanded ? const Color(0xFFCCFF00) : Colors.black54,
+                            color: isExpanded ? AppColors.accent : Colors.black54,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -287,7 +287,7 @@ class _AssetVideoPlayerState extends State<_AssetVideoPlayer> {
   Widget _scanButton() {
     return ElevatedButton.icon(
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFFCCFF00),
+        backgroundColor: AppColors.accent,
         foregroundColor: Colors.black,
       ),
       icon: const Icon(Icons.camera_alt_rounded, size: 14),
@@ -342,7 +342,7 @@ class _AssetVideoPlayerState extends State<_AssetVideoPlayer> {
                 IconButton(
                   icon: Icon(
                     controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
-                    color: const Color(0xFFCCFF00),
+                    color: AppColors.accent,
                   ),
                   onPressed: () {
                     setState(() {
@@ -360,7 +360,7 @@ class _AssetVideoPlayerState extends State<_AssetVideoPlayer> {
       );
     } else {
       child = const Center(
-        child: CircularProgressIndicator(color: Color(0xFFCCFF00)),
+        child: CircularProgressIndicator(color: AppColors.accent),
       );
     }
 

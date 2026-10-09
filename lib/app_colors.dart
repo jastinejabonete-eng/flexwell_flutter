@@ -17,6 +17,9 @@ class AppColors {
   static const darkSurface = Color(0xFF1A1F26);
   static const darkCard = Color(0xFF222831);
   static const darkBorder = Color(0xFF2C3440);
+  // The raised card fill actually used across screens (kept distinct from
+  // darkCard so both stay available; migrate call sites onto these).
+  static const darkCardFilled = Color(0xFF1E232A);
 
   // Light Theme Palette
   // Cool grey-blue page background so white cards stand out from it.
@@ -30,6 +33,16 @@ class AppColors {
   // Deep lime-green for TEXT / ICONS / BORDERS on light surfaces. The neon
   // volt (#CCFF00) is almost invisible on white; use it only as a fill.
   static const accentText = Color(0xFF3F6212);
+
+  // Bottom navigation bar (the floating pill in main_navigation_screen).
+  static const navBarBackground = Color(0xFF0F172A);
+  static const navBarActivePill = Color(0xFF1E293B);
+  static const navBarInactive = Color(0xFF64748B);
+
+  // Achievement gold (unlocked badges / trophy accents).
+  static const gold = Color(0xFFFFD700);
+  // Locked/undone badge outline (achievements screen shields).
+  static const badgeLocked = Color(0xFF94A3B8);
 
   /// Volt in dark mode, readable deep green in light mode.
   static Color voltFor(bool isDark) => isDark ? accent : accentText;

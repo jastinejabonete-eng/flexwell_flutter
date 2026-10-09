@@ -18,11 +18,11 @@ class SettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         children: [
           // Theme Toggle Section
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
+          Material(
+            color: Theme.of(context).cardColor,
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(
+              side: BorderSide(
                 color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
               ),
             ),
@@ -42,6 +42,10 @@ class SettingsScreen extends StatelessWidget {
               subtitle: const Text('Switch between Light and Gym Dark Theme'),
               value: isDark,
               onChanged: (bool val) {
+                // The app-level MaterialApp animates the swap
+                // (themeAnimationDuration in main.dart), so the heavy
+                // dark-mode shadows rebuild across a short cross-fade instead
+                // of in one janky frame.
                 themeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
               },
             ),
@@ -52,11 +56,11 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 14),
 
           // Terms and Conditions
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
+          Material(
+            color: Theme.of(context).cardColor,
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(
+              side: BorderSide(
                 color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
               ),
             ),

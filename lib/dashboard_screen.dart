@@ -203,7 +203,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
                       prefixIcon: Icon(Icons.search, color: isDark ? Colors.white54 : AppColors.lightTextSecondary),
                       filled: true,
-                      fillColor: isDark ? const Color(0xFF1E232A) : Colors.white,
+                      fillColor: isDark ? AppColors.darkCardFilled : Colors.white,
                       contentPadding: const EdgeInsets.symmetric(vertical: 0),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -239,9 +239,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               color: isSelected ? Colors.black : (isDark ? Colors.white : AppColors.lightText),
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                             ),
-                            backgroundColor: isDark ? const Color(0xFF1E232A) : Colors.white,
-                            selectedColor: const Color(0xFFCCFF00),
-                            side: BorderSide(color: isSelected ? const Color(0xFFCCFF00) : (isDark ? Colors.white12 : AppColors.lightBorder)),
+                            backgroundColor: isDark ? AppColors.darkCardFilled : Colors.white,
+                            selectedColor: AppColors.accent,
+                            side: BorderSide(color: isSelected ? AppColors.accent : (isDark ? Colors.white12 : AppColors.lightBorder)),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                           ),
                         );
@@ -285,7 +285,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E232A) : Colors.white,
+        color: isDark ? AppColors.darkCardFilled : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.lightBorder),
         boxShadow: [
@@ -352,7 +352,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFCCFF00).withValues(alpha: 0.15),
+                        color: AppColors.accent.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -535,7 +535,7 @@ class _StreakCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E232A) : Colors.white,
+        color: isDark ? AppColors.darkCardFilled : Colors.white,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: !active

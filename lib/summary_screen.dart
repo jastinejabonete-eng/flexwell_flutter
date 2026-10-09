@@ -29,7 +29,7 @@ class SummaryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1E232A) : Colors.white;
+    final cardColor = isDark ? AppColors.darkCardFilled : Colors.white;
     final primaryTextColor = isDark ? Colors.white : AppColors.lightText;
     final secondaryTextColor = isDark ? Colors.white54 : AppColors.lightTextSecondary;
 
@@ -163,13 +163,13 @@ class SummaryScreen extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFCCFF00).withValues(alpha: 0.15),
+                                  color: AppColors.accent.withValues(alpha: 0.15),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
                                   isRepBased ? Icons.repeat_rounded : Icons.timer_rounded,
                                   color: isDark
-                                      ? const Color(0xFFCCFF00)
+                                      ? AppColors.accent
                                       : Colors.green.shade800,
                                   size: 32,
                                 ),
@@ -266,13 +266,13 @@ class SummaryScreen extends StatelessWidget {
                       height: 56,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFCCFF00), // Volt Green Gym color
+                          backgroundColor: AppColors.accent, // Volt Green Gym color
                           foregroundColor: Colors.black,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
                           elevation: 4,
-                          shadowColor: const Color(0xFFCCFF00).withValues(alpha: 0.4),
+                          shadowColor: AppColors.accent.withValues(alpha: 0.4),
                         ),
                         icon: const Icon(Icons.refresh_rounded, size: 24),
                         label: const Text(
