@@ -4,7 +4,20 @@ import 'camera_screen.dart';
 import 'fade_route.dart';
 import 'main_navigation_screen.dart';
 
-class SummaryScreen extends StatelessWidget {
+/// Built-in title/icon for each achievement id, used to celebrate a newly
+/// unlocked badge on the session summary. Kept in sync with the user manual
+/// and the achievements catalog. Offline-safe (no Firestore read needed).
+const Map<String, (String, IconData)> _kAchievementMeta = {
+  'first_milestone': ('First Milestone', Icons.workspace_premium_rounded),
+  'iron_core': ('Iron Core', Icons.shield_rounded),
+  'form_master': ('Form Master', Icons.verified_rounded),
+  'flawless_form': ('Flawless Form', Icons.star_rounded),
+  'gym_warrior': ('Gym Warrior', Icons.bolt_rounded),
+  'determination': ('Determination', Icons.fitness_center_rounded),
+  'share': ('Share', Icons.handshake_rounded),
+};
+
+class SummaryScreen extends StatefulWidget {
   final String exercise;
   final int accuracy;
   final int reps;
@@ -16,6 +29,11 @@ class SummaryScreen extends StatelessWidget {
   // exercises / older call sites that haven't been updated yet.
   final int perfectReps;
 
+  /// Achievement ids unlocked by the session that just finished. When
+  /// non-empty the screen shows a celebratory dialog once it is on screen.
+  /// Passed in by CameraScreen after AchievementService.recordSession().
+  final List<String> unlockedAchievements;
+
   const SummaryScreen({
     super.key,
     required this.exercise,
@@ -24,7 +42,113 @@ class SummaryScreen extends StatelessWidget {
     required this.longestHold,
     required this.isRepBased,
     this.perfectReps = 0,
+    this.unlockedAchievements = const [],
   });
+
+  @override
+  State<SummaryScreen> createState() => _SummaryScreenState();
+}
+
+class _SummaryScreenState extends State<SummaryScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Show the celebration after the first frame so the summary is already
+    // visible behind the dialog. Guarded so it only ever fires once.
+    if (widget.unlockedAchievements.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showUnlockCelebration(widget.unlockedAchievements);
+      });
+    }
+  }
+
+  void _showUnlockCelebration(List<String> ids) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColors.darkCardFilled : Colors.white;
+    final text = isDark ? Colors.white : AppColors.lightText;
+    final sub = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: bg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        contentPadding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: AppColors.gold,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _kAchievementMeta[ids.first]?.$2 ?? Icons.emoji_events_rounded,
+                color: Colors.black,
+                size: 40,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              ids.length == 1 ? 'Badge Unlocked!' : '${ids.length} Badges Unlocked!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: text,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 16),
+            for (final id in ids)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  children: [
+                    Icon(_kAchievementMeta[id]?.$2 ?? Icons.emoji_events_rounded,
+                        color: AppColors.gold, size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _kAchievementMeta[id]?.$1 ?? id,
+                        style: TextStyle(
+                          color: text,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 6),
+            Text(
+              'Keep it up — check the Badges tab to see them all.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: sub, fontSize: 12.5, height: 1.4),
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Awesome!',
+                  style: TextStyle(fontWeight: FontWeight.w900)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
