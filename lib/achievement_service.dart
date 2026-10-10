@@ -18,18 +18,28 @@ class AchievementService {
   static const Duration _signInTimeout = Duration(seconds: 8);
 
   /// Returns the signed-in user, retrying anonymous sign-in if it failed at
-  /// startup (e.g. first launch while offline). Never throws.
+  /// startup (e.g. first launch while offline). Retries a few times with a
+  /// short backoff because the initial sign-in can lose a race with Firebase
+  /// init. Never throws.
   static Future<User?> _ensureUser() async {
     final existing = FirebaseAuth.instance.currentUser;
     if (existing != null) return existing;
-    try {
-      final cred =
-          await FirebaseAuth.instance.signInAnonymously().timeout(_signInTimeout);
-      return cred.user;
-    } catch (e) {
-      debugPrint('Anonymous sign-in retry failed: $e');
-      return null;
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        final cred = await FirebaseAuth.instance
+            .signInAnonymously()
+            .timeout(_signInTimeout);
+        debugPrint('FlexWell: anonymous sign-in OK (uid=${cred.user?.uid})');
+        return cred.user;
+      } catch (e) {
+        debugPrint('FlexWell: anonymous sign-in attempt '
+            '${attempt + 1} failed: $e');
+        await Future.delayed(Duration(milliseconds: 400 * (attempt + 1)));
+      }
     }
+    debugPrint('FlexWell: anonymous sign-in FAILED after retries -- '
+        'sessions/achievements will NOT be saved.');
+    return null;
   }
 
   static Future<CollectionReference<Map<String, dynamic>>?> _userCollection(
@@ -118,10 +128,17 @@ class AchievementService {
   }) async {
     final newlyUnlocked = <String>[];
     try {
-      if (reliableFrames < minReliableFrames) return newlyUnlocked;
+      if (reliableFrames < minReliableFrames) {
+        debugPrint('FlexWell: session too short (${reliableFrames} < '
+            '${minReliableFrames} frames) -- nothing saved.');
+        return newlyUnlocked;
+      }
 
       final sessions = await _userCollection('sessions');
-      if (sessions == null) return newlyUnlocked;
+      if (sessions == null) {
+        debugPrint('FlexWell: no signed-in user -- session NOT saved.');
+        return newlyUnlocked;
+      }
 
       // Sanitise inputs so bad values never reach Firestore or the rules below.
       final safeAccuracy = accuracy.clamp(0, 100).toInt();
