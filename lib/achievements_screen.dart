@@ -99,7 +99,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
   /// Opens the real OS share sheet with [text]. Unlocks the "share"
   /// achievement only when the user actually completes a share (status
-  /// success), so the badge reflects a genuine action rather than a stub.
+  /// success) AND has already earned at least one workout badge, so Share is
+  /// not a freebie unlockable before doing anything.
   Future<void> _share(BuildContext context, String text) async {
     // Keep a handle on the messenger before the await: using BuildContext
     // across an async gap is unsafe once the widget may be unmounted.
@@ -107,9 +108,16 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     try {
       final result = await Share.share(text);
       if (result.status == ShareResultStatus.success) {
-        await AchievementService.unlockAchievement('share');
+        final unlocked =
+            await AchievementService.unlockShareAchievement();
         messenger.showSnackBar(
-          const SnackBar(content: Text('Thanks for sharing!')),
+          SnackBar(
+            content: Text(
+              unlocked
+                  ? 'Thanks for sharing! Badge unlocked.'
+                  : 'Thanks for sharing! Earn a workout badge first to unlock the Share badge.',
+            ),
+          ),
         );
       } else {
         messenger.showSnackBar(

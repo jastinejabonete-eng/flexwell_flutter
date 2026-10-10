@@ -73,6 +73,31 @@ class AchievementService {
     }
   }
 
+  /// Unlocks the 'share' achievement, but ONLY if the user has already earned
+  /// at least one WORKOUT badge. This stops Share from being a freebie that
+  /// can be unlocked on first launch by tapping the share icon, before the
+  /// user has done anything.
+  ///
+  /// Returns true when 'share' ends up unlocked (whether newly unlocked now or
+  /// already unlocked before); false when the prerequisite isn't met (no
+  /// workout badge yet) or the write couldn't be attempted.
+  static Future<bool> unlockShareAchievement() async {
+    try {
+      final col = await _userCollection('unlocked_achievements');
+      if (col == null) return false;
+      final snap = await col.get().timeout(_readTimeout);
+      final hasWorkoutBadge = snap.docs.any(
+        (d) => d.id != 'share' && (d.data()['unlocked'] == true),
+      );
+      if (!hasWorkoutBadge) return false;
+      await unlockAchievement('share');
+      return true;
+    } catch (e) {
+      debugPrint('unlockShareAchievement failed: $e');
+      return false;
+    }
+  }
+
   /// Saves a finished session and evaluates every achievement.
   /// Returns the ids that were newly unlocked. Never throws.
   static Future<List<String>> recordSession({
