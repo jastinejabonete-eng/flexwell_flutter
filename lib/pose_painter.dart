@@ -145,20 +145,25 @@ class PosePainter extends CustomPainter {
       ..strokeWidth = 12
       ..strokeCap = StrokeCap.round;
 
-    // Mirror the preview's layout EXACTLY (see camera_screen.dart):
-    //   previewAspectRatio = 1 / camera.aspectRatio
-    //   a child is laid out at that aspect ratio inside the screen
-    //   (AspectRatio picks the box that fits the screen), then uniformly
-    //   scaled by scale = max(screenAR/previewAR, previewAR/screenAR) about
-    //   the screen centre. Using any other scale expression (e.g. the old
-    //   max(size.w/imageSize.w, size.h/imageSize.h)) makes the skeleton drift
-    //   off the body whenever the sensor and screen aspects differ.
+    // Mirror the preview's transform EXACTLY (see camera_screen.dart):
+    //   1. An AspectRatio box at previewAspectRatio is laid out and CENTERED
+    //      on screen (the Center widget).
+    //   2. Transform.scale(scale) scales that box about ITS OWN CENTRE.
+    //      (Flutter's default transform origin is the centre, and because the
+    //      box is already screen-centred, the scaled result stays centred.)
+    //
+    // So a landmark at normalized (lx, ly) maps to screen as:
+    //   screenX = centerX + (lx - 0.5) * laidW * scale
+    //   screenY = centerY + (ly - 0.5) * laidH * scale
+    // where laidW/laidH are the AspectRatio box that fits the screen. Using a
+    // left-origin offset (the old code) double-counts the centering and
+    // shrinks the skeleton into a corner.
     final previewAspectRatio = imageSize.width / imageSize.height;
     final screenAR = size.width / size.height;
     var scale = screenAR / previewAspectRatio;
     if (scale < 1) scale = 1 / scale;
 
-    // Size of the laid-out preview box (the one that fits the screen).
+    // The AspectRatio box that fits inside the screen.
     double laidW, laidH;
     if (imageSize.width / imageSize.height > screenAR) {
       laidW = size.width;
@@ -167,18 +172,18 @@ class PosePainter extends CustomPainter {
       laidH = size.height;
       laidW = size.height * previewAspectRatio;
     }
-    final offsetX = (size.width - laidW) / 2;
-    final offsetY = (size.height - laidH) / 2;
+    final centerX = size.width / 2;
+    final centerY = size.height / 2;
 
     Offset mapPoint(PoseLandmark landmark) {
-      var x = landmark.x * scale + offsetX;
-      // Mirror in SCREEN space: x -> W - x. Flip the raw landmark BEFORE
-      // applying scale+offset so the offset keeps its sign:
-      //   x = size.width - landmark.x * scale - offsetX.
+      // Position within the laid-out preview box, then scale about centre.
+      var x = centerX + (landmark.x - 0.5) * laidW * scale;
+      // Mirror in SCREEN space for the front camera: x -> W - x.
       if (isFrontCamera) {
-        x = size.width - landmark.x * scale - offsetX;
+        x = size.width - x;
       }
-      return Offset(x, landmark.y * scale + offsetY);
+      final y = centerY + (landmark.y - 0.5) * laidH * scale;
+      return Offset(x, y);
     }
 
     bool visible(PoseLandmark? lm) {
