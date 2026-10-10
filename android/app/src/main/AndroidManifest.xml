@@ -32,11 +32,33 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- share_plus: FileProvider so the shared PNG is handed off via a
+             secure content:// URI (a raw file:// path crashes on Android 7+). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- share_plus: let the app see and hand off to sharing targets
+             (Android 11+ package visibility). Without ACTION_SEND here the
+             share sheet resolves to nothing and fails silently. -->
+        <intent>
+            <action android:name="android.intent.action.SEND"/>
+            <data android:mimeType="image/*"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEND"/>
             <data android:mimeType="text/plain"/>
         </intent>
     </queries>
