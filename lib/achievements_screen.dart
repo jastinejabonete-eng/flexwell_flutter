@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'achievement_service.dart';
 import 'app_colors.dart';
 
@@ -96,9 +97,30 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     return '${d.month}/${d.day}/${d.year % 100}, $h:$m $suffix';
   }
 
-  void _share(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-    AchievementService.unlockAchievement('share');
+  /// Opens the real OS share sheet with [text]. Unlocks the "share"
+  /// achievement only when the user actually completes a share (status
+  /// success), so the badge reflects a genuine action rather than a stub.
+  Future<void> _share(BuildContext context, String text) async {
+    // Keep a handle on the messenger before the await: using BuildContext
+    // across an async gap is unsafe once the widget may be unmounted.
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final result = await Share.share(text);
+      if (result.status == ShareResultStatus.success) {
+        await AchievementService.unlockAchievement('share');
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Thanks for sharing!')),
+        );
+      } else {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Share cancelled.')),
+        );
+      }
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not open the share sheet: $e')),
+      );
+    }
   }
 
   void _showAchievementDetails(
@@ -179,7 +201,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     ),
                     onPressed: unlocked
                         ? () {
-                            _share(context, 'Sharing "${item.title}" achievement!');
+                            _share(context,
+                                'I just earned the "${item.title}" achievement on FlexWell! 💪');
                             Navigator.of(dialogContext).pop();
                           }
                         : null,
@@ -270,7 +293,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.ios_share_rounded, color: primaryTextColor),
-            onPressed: () => _share(context, 'Sharing achievements overview...'),
+            onPressed: () => _share(
+                  context,
+                  'I\'m building my fitness streak on FlexWell! 🏋️',
+                ),
           ),
         ],
         backgroundColor: Colors.transparent,
