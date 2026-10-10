@@ -707,6 +707,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
                   isCorrect: o.isCorrect,
                   isNeutral: !o.landmarksOk || o.showNeutral,
                   imageSize: o.imageSize,
+                  // Must match the preview's aspect ratio exactly, or the
+                  // skeleton is scaled into the wrong box and drifts off-body.
+                  previewAspectRatio: controller.value.aspectRatio,
                   isFrontCamera: _isFrontCamera,
                   hideLowerBody: PosePainter.hidesLowerBody(widget.exercise),
                   requiredLandmarks: PosePainter.requiredFor(widget.exercise),

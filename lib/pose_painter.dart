@@ -29,6 +29,14 @@ class PosePainter extends CustomPainter {
   /// Null = always draw.
   final Set<PoseLandmarkType>? requiredLandmarks;
 
+  /// The camera preview's aspect ratio (CameraController.value.aspectRatio,
+  /// i.e. width/height of the sensor output). The preview lays out an
+  /// AspectRatio box at 1/this and scales it to fill the screen. The painter
+  /// MUST use this same value -- deriving the aspect from [imageSize] (the ML
+  /// Kit frame) gives a DIFFERENT ratio, so the skeleton is squished/offset
+  /// from the body. Null falls back to imageSize's ratio.
+  final double? previewAspectRatio;
+
   /// Same reliability cut-off the analyzer uses (PoseAnalyzer._reliable).
   static const double minLikelihood = 0.6;
 
@@ -40,6 +48,7 @@ class PosePainter extends CustomPainter {
     this.isNeutral = false,
     this.hideLowerBody = false,
     this.requiredLandmarks,
+    this.previewAspectRatio,
   });
 
   /// Must mirror the `required` lists in PoseAnalyzer.analyze().
@@ -134,15 +143,6 @@ class PosePainter extends CustomPainter {
     if (!_hasRequiredLandmarks(currentPose)) return;
     final color = isNeutral ? Colors.orange : (isCorrect ? Colors.green : Colors.red);
 
-    // TEMP DEBUG: logs why the skeleton may not draw. Remove once aligned.
-    if (kDebugMode) {
-      final nLm = currentPose.landmarks.length;
-      debugPrint('[painter] size=$size imageSize=$imageSize '
-          'landmarks=$nLm hasRequired=${_hasRequiredLandmarks(currentPose)} '
-          'isFront=$isFrontCamera previewAR='
-          '${imageSize.width / imageSize.height}');
-    }
-
     // Bones: drawn as one batch of line segments (butt caps, width 4, exactly
     // like the previous per-line drawLine calls).
     final linePaint = Paint()
@@ -156,39 +156,42 @@ class PosePainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     // Mirror the preview's transform EXACTLY (see camera_screen.dart):
-    //   1. An AspectRatio box at previewAspectRatio is laid out and CENTERED
-    //      on screen (the Center widget).
-    //   2. Transform.scale(scale) scales that box about ITS OWN CENTRE.
-    //      (Flutter's default transform origin is the centre, and because the
-    //      box is already screen-centred, the scaled result stays centred.)
-    //
-    // So a landmark at normalized (lx, ly) maps to screen as:
-    //   screenX = centerX + (lx - 0.5) * laidW * scale
-    //   screenY = centerY + (ly - 0.5) * laidH * scale
-    // where laidW/laidH are the AspectRatio box that fits the screen. Using a
-    // left-origin offset (the old code) double-counts the centering and
-    // shrinks the skeleton into a corner.
-    final previewAspectRatio = imageSize.width / imageSize.height;
+    //   previewAspectRatio = 1 / controller.value.aspectRatio   <- the passed value
+    //   a box at that ratio is laid out and CENTERED, then Transform.scale(scale)
+    //   scales it about its own centre. A normalized landmark (lx, ly) maps to:
+    //     screenX = centerX + (lx - 0.5) * laidW * scale
+    //     screenY = centerY + (ly - 0.5) * laidH * scale
+    // CRITICAL: previewAspectRatio must be the camera's (1/aspectRatio), NOT
+    // imageSize.width/imageSize.height -- those differ, which squished the
+    // skeleton into a corner.
+    final camAR = previewAspectRatio ?? (imageSize.width / imageSize.height);
+    final previewAR = 1 / camAR; // width/height of the displayed preview box
     final screenAR = size.width / size.height;
-    var scale = screenAR / previewAspectRatio;
+    var scale = screenAR / previewAR;
     if (scale < 1) scale = 1 / scale;
 
-    // The AspectRatio box that fits inside the screen.
+    // The AspectRatio box (at previewAR) that fits inside the screen.
     double laidW, laidH;
-    if (imageSize.width / imageSize.height > screenAR) {
+    if (previewAR > screenAR) {
       laidW = size.width;
-      laidH = size.width / previewAspectRatio;
+      laidH = size.width / previewAR;
     } else {
       laidH = size.height;
-      laidW = size.height * previewAspectRatio;
+      laidW = size.height * previewAR;
     }
     final centerX = size.width / 2;
     final centerY = size.height / 2;
 
+    // TEMP DEBUG: confirm the transform matches the preview. Remove once aligned.
+    if (kDebugMode) {
+      debugPrint('[painter] size=$size camAR=$camAR previewAR=$previewAR '
+          'scale=${scale.toStringAsFixed(3)} '
+          'laid=${laidW.toStringAsFixed(0)}x${laidH.toStringAsFixed(0)} '
+          'isFront=$isFrontCamera');
+    }
+
     Offset mapPoint(PoseLandmark landmark) {
-      // Position within the laid-out preview box, then scale about centre.
       var x = centerX + (landmark.x - 0.5) * laidW * scale;
-      // Mirror in SCREEN space for the front camera: x -> W - x.
       if (isFrontCamera) {
         x = size.width - x;
       }
@@ -234,5 +237,6 @@ class PosePainter extends CustomPainter {
       old.imageSize != imageSize ||
       old.isFrontCamera != isFrontCamera ||
       old.hideLowerBody != hideLowerBody ||
-      old.requiredLandmarks != requiredLandmarks;
+      old.requiredLandmarks != requiredLandmarks ||
+      old.previewAspectRatio != previewAspectRatio;
 }
