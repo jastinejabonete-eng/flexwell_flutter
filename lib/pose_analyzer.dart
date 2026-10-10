@@ -632,9 +632,13 @@ class PoseAnalyzer {
         }
       }
 
-      // Before the peak is known we don't judge the rep.
+      // Before the peak is known we don't judge the rep. Show a NEUTRAL
+      // "hold" state, NOT green -- an unjudged rep must never read as good
+      // form (that hid every wrong squat whose pose was out-of-distribution
+      // for the tiny Squat model). landmarksReliable=false renders it orange.
       if (!_repCommitted) {
-        return AnalysisResult(true, 'Good form', repSignal, smoothedPose: smoothedPose);
+        return AnalysisResult(true, 'Hold at the bottom of the rep', repSignal,
+            smoothedPose: smoothedPose, landmarksReliable: false);
       }
       return _repVerdictResult(exercise, repSignal, smoothedPose);
     } else {
