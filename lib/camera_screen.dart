@@ -558,6 +558,12 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
       }
     } catch (_) {}
 
+    // Judge any rep still in progress so stopping mid-rep (or at the bottom of
+    // a squat) is still scored instead of silently dropped.
+    try {
+      await _poseAnalyzer.finalizeRep(widget.exercise);
+    } catch (_) {}
+
     final accuracy = _totalFrames > 0 ? (_correctFrames * 100 / _totalFrames).round() : 0;
 
     // Save the session and evaluate achievements. Awaiting here (rather than

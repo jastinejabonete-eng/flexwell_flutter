@@ -505,6 +505,16 @@ class PoseAnalyzer {
     return true;
   }
 
+  /// Judge a rep that is still in progress when the session ends, so a squat
+  /// the user stopped mid-way (or tapped Stop at the bottom) is still scored
+  /// instead of silently dropped. Call from CameraScreen._endSession() before
+  /// saving the session. No-op when there's nothing to judge.
+  Future<void> finalizeRep(String exercise) async {
+    if (_peakFeatures != null && !_repCommitted && _engagedFrames >= _minEngagedFrames) {
+      await _commitRepVerdict(exercise, 'session ended');
+    }
+  }
+
   AnalysisResult _repVerdictResult(String exercise, double repSignal, [Pose? smoothedPose]) {
     final verdict = _repVerdict ?? true;
     final message = verdict ? 'Good form' : (_correctionMessages[exercise] ?? 'Adjust your form');
@@ -589,7 +599,11 @@ class PoseAnalyzer {
         _repCommitted = false;
         _repVerdict = null;
         _verdictHoldFramesLeft = 0;
-        return AnalysisResult(true, 'Good form', repSignal, smoothedPose: smoothedPose);
+        // Not in a rep (standing / between reps / a rep that hasn't been judged
+        // yet): this is NEUTRAL, not "Good form". Claiming green here with no
+        // classifier verdict is what made unjudged frames show a false green.
+        return AnalysisResult(false, 'Stand ready -- start your rep', repSignal,
+            landmarksReliable: false, smoothedPose: smoothedPose);
       }
 
       // ---- Engaged ----

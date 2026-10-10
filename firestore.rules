@@ -48,10 +48,16 @@ service cloud.firestore {
       }
     }
 
-    // The admin dashboard runs a collection-group query over every user's
-    // unlocked_achievements. Collection-group rules are declared separately
-    // from the per-user match above, and only the admin needs collection-group
-    // access (the app only ever queries its own subtree).
+    // ---- Collection-group queries (admin dashboard Overview) ----
+    // The dashboard runs allDescendants collection-group queries over
+    // 'sessions' and 'unlocked_achievements' across EVERY user. These require
+    // their own recursive-wildcard rules, separate from the per-user matches
+    // above. Only the admin runs collection-group queries; the app only ever
+    // reads its own subtree.
+    match /{path=**}/sessions/{sessionId} {
+      allow read, write: if isAdmin();
+    }
+
     match /{path=**}/unlocked_achievements/{achievementId} {
       allow read, write: if isAdmin();
     }

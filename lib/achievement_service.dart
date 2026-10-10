@@ -129,8 +129,8 @@ class AchievementService {
     final newlyUnlocked = <String>[];
     try {
       if (reliableFrames < minReliableFrames) {
-        debugPrint('FlexWell: session too short (${reliableFrames} < '
-            '${minReliableFrames} frames) -- nothing saved.');
+        debugPrint('FlexWell: session too short ($reliableFrames < '
+            '$minReliableFrames frames) -- nothing saved.');
         return newlyUnlocked;
       }
 
