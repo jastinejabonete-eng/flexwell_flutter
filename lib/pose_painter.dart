@@ -1,5 +1,4 @@
 import 'dart:ui' as ui;
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 
@@ -182,42 +181,20 @@ class PosePainter extends CustomPainter {
     final centerX = size.width / 2;
     final centerY = size.height / 2;
 
-    // TEMP DEBUG: confirm the transform matches the preview. Remove once aligned.
-    if (kDebugMode) {
-      debugPrint('[painter] size=$size camAR=$camAR previewAR=$previewAR '
-          'scale=${scale.toStringAsFixed(3)} '
-          'laid=${laidW.toStringAsFixed(0)}x${laidH.toStringAsFixed(0)} '
-          'isFront=$isFrontCamera');
-    }
-
     Offset mapPoint(PoseLandmark landmark) {
-      var x = centerX + (landmark.x - 0.5) * laidW * scale;
+      // ML Kit returns landmark.x/y in ABSOLUTE PIXELS of the input image
+      // (confirmed: range was ~1..141 x, ~1..282 y for a 240x320 frame), NOT
+      // normalized 0-1. Normalize by imageSize first, then map into the
+      // preview box exactly like the preview's Center -> AspectRatio ->
+      // Transform.scale transform.
+      final nx = landmark.x / imageSize.width;
+      final ny = landmark.y / imageSize.height;
+      var x = centerX + (nx - 0.5) * laidW * scale;
       if (isFrontCamera) {
         x = size.width - x;
       }
-      final y = centerY + (landmark.y - 0.5) * laidH * scale;
+      final y = centerY + (ny - 0.5) * laidH * scale;
       return Offset(x, y);
-    }
-
-    // TEMP DIAGNOSTIC: log landmark coordinate range + mapped screen range so
-    // we can see whether ML Kit coords span 0-1 and where they land on screen.
-    if (kDebugMode) {
-      double minX = 1, maxX = 0, minY = 1, maxY = 0;
-      for (final lm in currentPose.landmarks.values) {
-        if (lm.x < minX) minX = lm.x;
-        if (lm.x > maxX) maxX = lm.x;
-        if (lm.y < minY) minY = lm.y;
-        if (lm.y > maxY) maxY = lm.y;
-      }
-      // Map two corners to see where the body's bounding box lands.
-      final nose = currentPose.landmarks[PoseLandmarkType.nose];
-      final lAnkle = currentPose.landmarks[PoseLandmarkType.leftAnkle];
-      final noseP = nose == null ? null : mapPoint(nose);
-      final ankleP = lAnkle == null ? null : mapPoint(lAnkle);
-      debugPrint('[painter] landmarkRange x[$minX..$maxX] y[$minY..$maxY] '
-          'nose->${noseP?.dx.toStringAsFixed(0)},${noseP?.dy.toStringAsFixed(0)} '
-          'lAnkle->${ankleP?.dx.toStringAsFixed(0)},${ankleP?.dy.toStringAsFixed(0)} '
-          'screen=${size.width.toInt()}x${size.height.toInt()}');
     }
 
     bool visible(PoseLandmark? lm) {
