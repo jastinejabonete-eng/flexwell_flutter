@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:collection';
 import 'dart:typed_data';
 import 'dart:io';
 import 'dart:ui' show ImageByteFormat;
@@ -42,6 +44,18 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   // correct badge.
   _Achievement? _shareBadge;
 
+  // Live subscription to the user's unlocked badges. When a NEW badge id
+  // appears (any badge, not just Share), we pop the celebration once. This
+  // covers badges that land while viewing this screen (e.g. a session write
+  // finishing, or the Share badge) so every unlock feels rewarded.
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _unlockedSub;
+  final Set<String> _knownUnlocked = {};
+  // Latest catalog snapshot, used to map a newly-unlocked id -> its title.
+  List<_Achievement> _catalogCache = const [];
+  // Ids queued to celebrate but not yet shown (dedupes rapid multi-unlocks).
+  final ListQueue<String> _pendingCelebrations = ListQueue<String>();
+  bool _celebrating = false;
+
   @override
   void initState() {
     super.initState();
@@ -60,6 +74,52 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             .doc(user.uid)
             .collection('unlocked_achievements')
             .snapshots();
+    _unlockedSub = _unlockedStream?.listen(_onUnlockedSnapshot);
+  }
+
+  @override
+  void dispose() {
+    _unlockedSub?.cancel();
+    super.dispose();
+  }
+
+  /// Fires the celebration popup for any badge id that appears for the first
+  /// time in the unlocked stream. Skips the very first snapshot (those badges
+  /// were unlocked in past sessions -- already celebrated then).
+  void _onUnlockedSnapshot(QuerySnapshot<Map<String, dynamic>> snap) {
+    final nowUnlocked = <String>{};
+    for (final doc in snap.docs) {
+      if (doc.data()['unlocked'] == true) nowUnlocked.add(doc.id);
+    }
+    // First emission: seed the known set, celebrate nothing.
+    if (_knownUnlocked.isEmpty && _pendingCelebrations.isEmpty && !_seededUnlocked) {
+      _knownUnlocked.addAll(nowUnlocked);
+      _seededUnlocked = true;
+      return;
+    }
+    final fresh = nowUnlocked.difference(_knownUnlocked);
+    _knownUnlocked.addAll(nowUnlocked);
+    for (final id in fresh) {
+      _pendingCelebrations.add(id);
+    }
+    _drainCelebrations();
+  }
+
+  bool _seededUnlocked = false;
+
+  /// Shows celebration popups one at a time (so they don't stack), pulling the
+  /// badge title from the cached catalog.
+  void _drainCelebrations() {
+    if (_celebrating || _pendingCelebrations.isEmpty || !mounted) return;
+    final id = _pendingCelebrations.removeFirst();
+    final title = _catalogCache
+            .firstWhere((a) => a.id == id, orElse: () => _Achievement(id, id, '', Icons.star_rounded, 0))
+            .title;
+    _celebrating = true;
+    _showUnlockCelebration(title).then((_) {
+      _celebrating = false;
+      _drainCelebrations();
+    });
   }
 
   /// The Share badge is identified by its catalog id. The live catalog uses
@@ -168,18 +228,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         text: caption,
       );
       if (result.status == ShareResultStatus.success) {
-        final newlyUnlocked =
-            await AchievementService.unlockShareAchievement();
-        if (newlyUnlocked) {
-          // Fresh unlock -> big celebration popup (not a subtle SnackBar).
-          if (mounted) _showUnlockCelebration(badge?.title ?? 'Share');
-        } else {
-          messenger.showSnackBar(
-            const SnackBar(
-              content: Text('Thanks for sharing!'),
-            ),
-          );
-        }
+        // The celebration popup is driven by the _unlockedStream listener
+        // (_onUnlockedSnapshot) the moment the new badge doc lands -- so we
+        // don't pop it here too, which would double up.
+        await AchievementService.unlockShareAchievement();
       } else {
         messenger.showSnackBar(
           const SnackBar(content: Text('Share cancelled.')),
@@ -283,11 +335,12 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   }
 
   /// Big celebratory popup shown when a badge is newly unlocked from the
-  /// Achievements screen (e.g. the Share badge). Mirrors the summary screen's
-  /// gold-trophy style so the moment feels rewarding, not a subtle toast.
-  void _showUnlockCelebration(String badgeTitle) {
+  /// Achievements screen. Mirrors the summary screen's gold-trophy style.
+  /// Returns a Future that completes when the dialog is dismissed, so callers
+  /// can queue the next celebration.
+  Future<void> _showUnlockCelebration(String badgeTitle) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    showDialog(
+    await showDialog(
       context: context,
       barrierDismissible: true,
       builder: (ctx) => AlertDialog(
@@ -550,6 +603,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       stream: _catalogStream,
       builder: (context, catalogSnapshot) {
         final catalog = _parseCatalog(catalogSnapshot.data);
+        // Keep a cache so the celebration can map a newly-unlocked id -> title.
+        if (catalog.isNotEmpty) _catalogCache = catalog;
 
         return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: _unlockedStream,
