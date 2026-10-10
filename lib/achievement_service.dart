@@ -87,10 +87,14 @@ class AchievementService {
       if (col == null) return false;
       final snap = await col.get().timeout(_readTimeout);
       final hasWorkoutBadge = snap.docs.any(
-        (d) => d.id != 'share' && (d.data()['unlocked'] == true),
+        (d) => d.id != 'share_achievement' &&
+            d.id != 'share' &&
+            (d.data()['unlocked'] == true),
       );
       if (!hasWorkoutBadge) return false;
-      await unlockAchievement('share');
+      // Must match the catalog doc id ('share_achievement') so the unlocked
+      // doc lines up with the catalog entry on the Achievements screen.
+      await unlockAchievement('share_achievement');
       return true;
     } catch (e) {
       debugPrint('unlockShareAchievement failed: $e');

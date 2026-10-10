@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'dart:io';
+import 'dart:ui' show ImageByteFormat;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -61,10 +62,16 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             .snapshots();
   }
 
+  /// The Share badge is identified by its catalog id. The live catalog uses
+  /// 'share_achievement'; accept 'share' too so a renamed catalog still works.
+  bool _isShareBadge(_Achievement item) =>
+      item.id == 'share_achievement' || item.id == 'share';
+
   /// Translates the string iconName from Firestore into a Flutter IconData object.
   IconData _getIcon(String name) {
     switch (name) {
       case 'handshake_rounded': return Icons.handshake_rounded;
+      case 'share_rounded': return Icons.ios_share_rounded;
       case 'workspace_premium_rounded': return Icons.workspace_premium_rounded;
       case 'fitness_center_rounded': return Icons.fitness_center_rounded;
       case 'shield_rounded': return Icons.shield_rounded;
@@ -410,14 +417,20 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       elevation: unlocked ? 4 : 0,
                     ),
-                    onPressed: unlocked
+                    // The Share badge is UNLOCKED BY sharing, so its button is
+                    // always tappable (the earn-prerequisite is enforced in
+                    // unlockShareAchievement). Every other locked badge stays
+                    // disabled -- you can't share a badge you haven't earned.
+                    onPressed: (unlocked || _isShareBadge(item))
                         ? () {
                             _share(context, badge: item);
                             Navigator.of(dialogContext).pop();
                           }
                         : null,
                     child: Text(
-                      unlocked ? 'Share' : 'Locked',
+                      unlocked
+                          ? 'Share'
+                          : (_isShareBadge(item) ? 'Share to unlock' : 'Locked'),
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -576,7 +589,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     )
                   else
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      // One badge -> centered; two or three -> spread evenly.
+                      mainAxisAlignment: latestThree.length == 1
+                          ? MainAxisAlignment.center
+                          : MainAxisAlignment.spaceEvenly,
                       children: latestThree.map((item) {
                         return GestureDetector(
                           onTap: () => _showAchievementDetails(context, item, true, unlocked[item.id]),
