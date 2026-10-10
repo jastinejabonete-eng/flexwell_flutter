@@ -50406,7 +50406,7 @@
         "label": "incorrect"
       }
     ],
-    "oodRadius": 0.6951
+    "oodRadius": 1.1483
   },
   "Plank": {
     "mean": [
@@ -68605,7 +68605,7 @@
         "label": "incorrect"
       }
     ],
-    "oodRadius": 0.2201
+    "oodRadius": 4.3345
   },
   "Pull-Up": {
     "mean": [
@@ -69290,7 +69290,7 @@
         "label": "incorrect"
       }
     ],
-    "oodRadius": 0.368
+    "oodRadius": 1.1237
   },
   "Push-Up": {
     "mean": [
@@ -98480,7 +98480,7 @@
         "label": "incorrect"
       }
     ],
-    "oodRadius": 0.1645
+    "oodRadius": 1.4973
   },
   "Squat": {
     "mean": [
@@ -98696,6 +98696,6 @@
         "label": "incorrect"
       }
     ],
-    "oodRadius": 0.2344
+    "oodRadius": 1.6843
   }
 }
