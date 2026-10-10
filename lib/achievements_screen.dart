@@ -1,9 +1,16 @@
+import 'dart:typed_data';
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'achievement_service.dart';
 import 'app_colors.dart';
+
+/// Key for the off-screen share card that gets captured to a PNG.
+final GlobalKey _shareCardKey = GlobalKey();
 
 class _Achievement {
   final String id;
@@ -97,19 +104,44 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     return '${d.month}/${d.day}/${d.year % 100}, $h:$m $suffix';
   }
 
-  /// Opens the real OS share sheet with [text]. Unlocks the "share"
-  /// achievement only when the user actually completes a share (status
-  /// success) AND has already earned at least one workout badge, so Share is
-  /// not a freebie unlockable before doing anything.
-  Future<void> _share(BuildContext context, String text) async {
-    // Keep a handle on the messenger before the await: using BuildContext
-    // across an async gap is unsafe once the widget may be unmounted.
+  /// Captures the off-screen share card ([_shareCardKey]) to a PNG, writes it
+  /// to a temp file, and opens the OS share sheet with that image. Unlocks the
+  /// "share" achievement only on a completed share AND when the user already
+  /// earned a workout badge.
+  Future<void> _share(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final result = await Share.share(text);
+      // 1. Capture the RepaintBoundary card to PNG bytes.
+      final boundary = _shareCardKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (boundary == null) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Share card not ready — try again.')),
+        );
+        return;
+      }
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ImageByteFormat.png);
+      final pngBytes = byteData?.buffer.asUint8List();
+      if (pngBytes == null) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Could not render the share image.')),
+        );
+        return;
+      }
+
+      // 2. Write to a temp file (share_plus shares files, not raw bytes).
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/flexwell_achievements.png');
+      await file.writeAsBytes(pngBytes);
+
+      // 3. Open the OS share sheet with the image + a caption.
+      final result = await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'My FlexWell achievements! 💪',
+      );
       if (result.status == ShareResultStatus.success) {
-        final unlocked =
-            await AchievementService.unlockShareAchievement();
+        final unlocked = await AchievementService.unlockShareAchievement();
         messenger.showSnackBar(
           SnackBar(
             content: Text(
@@ -129,6 +161,96 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         SnackBar(content: Text('Could not open the share sheet: $e')),
       );
     }
+  }
+
+  /// The off-screen card that gets captured to a shareable PNG. Shows the
+  /// unlocked count, the app brand, and up to six earned badges. Kept in the
+  /// widget tree (inside a RepaintBoundary) so it can always be captured.
+  Widget _buildShareCard(List<_Achievement> catalog, Map<String, DateTime?> unlocked) {
+    final earned = catalog.where((a) => unlocked.containsKey(a.id)).toList();
+    final shown = earned.take(6).toList();
+    return RepaintBoundary(
+      key: _shareCardKey,
+      child: Container(
+        width: 360,
+        padding: const EdgeInsets.all(28),
+        decoration: BoxDecoration(
+          color: AppColors.darkBackground,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.fitness_center_rounded, color: AppColors.accent, size: 28),
+                const SizedBox(width: 10),
+                Text(
+                  'FLEXWELL',
+                  style: TextStyle(
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.w900,
+                    fontStyle: FontStyle.italic,
+                    fontSize: 24,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'My Achievements',
+              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${unlocked.length} / ${catalog.length} unlocked',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 20),
+            if (shown.isEmpty)
+              Text(
+                'Start scanning to earn badges!',
+                style: TextStyle(color: Colors.white54, fontSize: 13),
+              )
+            else
+              Wrap(
+                spacing: 14,
+                runSpacing: 14,
+                children: shown
+                    .map((a) => Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildShieldBadge(icon: a.icon, unlocked: true, size: 44, iconSize: 20),
+                            const SizedBox(height: 6),
+                            SizedBox(
+                              width: 70,
+                              child: Text(
+                                a.title,
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ))
+                    .toList(),
+              ),
+            const SizedBox(height: 20),
+            Text(
+              'Train smart. Train safe.',
+              style: TextStyle(color: AppColors.accent, fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showAchievementDetails(
@@ -209,8 +331,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     ),
                     onPressed: unlocked
                         ? () {
-                            _share(context,
-                                'I just earned the "${item.title}" achievement on FlexWell! 💪');
+                            _share(context);
                             Navigator.of(dialogContext).pop();
                           }
                         : null,
@@ -301,18 +422,17 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.ios_share_rounded, color: primaryTextColor),
-            onPressed: () => _share(
-                  context,
-                  'I\'m building my fitness streak on FlexWell! 🏋️',
-                ),
+            onPressed: () => _share(context),
           ),
         ],
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.only(left: 20, right: 20, top: 12, bottom: 90),
-        child: Column(
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.only(left: 20, right: 20, top: 12, bottom: 90),
+            child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (hasError)
@@ -465,7 +585,17 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               },
             ),
           ],
-        ),
+          ),
+          ),
+          // Off-screen share card: laid out so its RepaintBoundary can be
+          // captured to a PNG, but positioned far above the viewport so it is
+          // never visible. Positioned (not Opacity) keeps it paintable.
+          Positioned(
+            top: -10000,
+            left: 0,
+            child: _buildShareCard(catalog, unlocked),
+          ),
+        ],
       ),
     );
   }
