@@ -12,6 +12,9 @@ import 'app_colors.dart';
 /// Key for the off-screen share card that gets captured to a PNG.
 final GlobalKey _shareCardKey = GlobalKey();
 
+/// Key for the off-screen single-badge share card.
+final GlobalKey _badgeShareCardKey = GlobalKey();
+
 class _Achievement {
   final String id;
   final String title;
@@ -32,6 +35,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   // Streams for the global catalog and the user's specific unlocks
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _catalogStream;
   late final Stream<QuerySnapshot<Map<String, dynamic>>>? _unlockedStream;
+
+  // The badge currently being shared (null = sharing the overview card).
+  // Set just before capture so the off-screen single-badge card renders the
+  // correct badge.
+  _Achievement? _shareBadge;
 
   @override
   void initState() {
@@ -104,16 +112,23 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     return '${d.month}/${d.day}/${d.year % 100}, $h:$m $suffix';
   }
 
-  /// Captures the off-screen share card ([_shareCardKey]) to a PNG, writes it
-  /// to a temp file, and opens the OS share sheet with that image. Unlocks the
-  /// "share" achievement only on a completed share AND when the user already
-  /// earned a workout badge.
-  Future<void> _share(BuildContext context) async {
+  /// Captures a share card to a PNG, writes it to a temp file, and opens the OS
+  /// share sheet with that image. When [badge] is provided, shares a card for
+  /// that single badge; otherwise shares the full achievements overview card.
+  /// Unlocks the "share" achievement only on a completed share AND when the
+  /// user already earned a workout badge.
+  Future<void> _share(BuildContext context, {_Achievement? badge}) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
-      // 1. Capture the RepaintBoundary card to PNG bytes.
-      final boundary = _shareCardKey.currentContext?.findRenderObject()
-          as RenderRepaintBoundary?;
+      // Render the correct off-screen card before capturing. setState rebuilds
+      // the widget tree; the await on the microtask lets that frame lay out.
+      setState(() => _shareBadge = badge);
+      await WidgetsBinding.instance.endOfFrame;
+
+      // 1. Capture the requested card to PNG bytes.
+      final key = badge == null ? _shareCardKey : _badgeShareCardKey;
+      final boundary =
+          key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) {
         messenger.showSnackBar(
           const SnackBar(content: Text('Share card not ready — try again.')),
@@ -132,13 +147,18 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
       // 2. Write to a temp file (share_plus shares files, not raw bytes).
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/flexwell_achievements.png');
+      final fileName =
+          badge == null ? 'flexwell_achievements.png' : 'flexwell_${badge.id}.png';
+      final file = File('${dir.path}/$fileName');
       await file.writeAsBytes(pngBytes);
 
       // 3. Open the OS share sheet with the image + a caption.
+      final caption = badge == null
+          ? 'My FlexWell achievements! 💪'
+          : 'I just earned the "${badge.title}" achievement on FlexWell! 💪';
       final result = await Share.shareXFiles(
         [XFile(file.path)],
-        text: 'My FlexWell achievements! 💪',
+        text: caption,
       );
       if (result.status == ShareResultStatus.success) {
         final unlocked = await AchievementService.unlockShareAchievement();
@@ -253,6 +273,67 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     );
   }
 
+  /// Off-screen single-badge share card. Shows the FLEXWELL brand, the badge's
+  /// shield + name + subtitle, and a footer. Captured to a PNG when the user
+  /// taps Share inside that badge's detail dialog.
+  Widget _buildBadgeShareCard(_Achievement badge) {
+    return RepaintBoundary(
+      key: _badgeShareCardKey,
+      child: Container(
+        width: 360,
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: AppColors.darkBackground,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.fitness_center_rounded, color: AppColors.accent, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  'FLEXWELL',
+                  style: TextStyle(
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.w900,
+                    fontStyle: FontStyle.italic,
+                    fontSize: 20,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 28),
+            _buildShieldBadge(icon: badge.icon, unlocked: true, size: 96, iconSize: 48),
+            const SizedBox(height: 20),
+            Text(
+              badge.title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.gold,
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              badge.subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Achievement unlocked on FlexWell',
+              style: TextStyle(color: AppColors.accent, fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showAchievementDetails(
     BuildContext context,
     _Achievement item,
@@ -331,7 +412,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     ),
                     onPressed: unlocked
                         ? () {
-                            _share(context);
+                            _share(context, badge: item);
                             Navigator.of(dialogContext).pop();
                           }
                         : null,
@@ -595,6 +676,15 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             left: 0,
             child: _buildShareCard(catalog, unlocked),
           ),
+          // Off-screen single-badge card for whichever badge is being shared
+          // (set by _share just before capture). Positioned far above the
+          // viewport so it is laid out and paintable but never visible.
+          if (_shareBadge != null)
+            Positioned(
+              top: -10000,
+              left: 0,
+              child: _buildBadgeShareCard(_shareBadge!),
+            ),
         ],
       ),
     );
