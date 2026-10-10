@@ -1,4 +1,5 @@
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 
@@ -132,6 +133,15 @@ class PosePainter extends CustomPainter {
     // Incomplete skeleton for this exercise: draw nothing.
     if (!_hasRequiredLandmarks(currentPose)) return;
     final color = isNeutral ? Colors.orange : (isCorrect ? Colors.green : Colors.red);
+
+    // TEMP DEBUG: logs why the skeleton may not draw. Remove once aligned.
+    if (kDebugMode) {
+      final nLm = currentPose.landmarks.length;
+      debugPrint('[painter] size=$size imageSize=$imageSize '
+          'landmarks=$nLm hasRequired=${_hasRequiredLandmarks(currentPose)} '
+          'isFront=$isFrontCamera previewAR='
+          '${imageSize.width / imageSize.height}');
+    }
 
     // Bones: drawn as one batch of line segments (butt caps, width 4, exactly
     // like the previous per-line drawLine calls).
