@@ -199,6 +199,27 @@ class PosePainter extends CustomPainter {
       return Offset(x, y);
     }
 
+    // TEMP DIAGNOSTIC: log landmark coordinate range + mapped screen range so
+    // we can see whether ML Kit coords span 0-1 and where they land on screen.
+    if (kDebugMode) {
+      double minX = 1, maxX = 0, minY = 1, maxY = 0;
+      for (final lm in currentPose.landmarks.values) {
+        if (lm.x < minX) minX = lm.x;
+        if (lm.x > maxX) maxX = lm.x;
+        if (lm.y < minY) minY = lm.y;
+        if (lm.y > maxY) maxY = lm.y;
+      }
+      // Map two corners to see where the body's bounding box lands.
+      final nose = currentPose.landmarks[PoseLandmarkType.nose];
+      final lAnkle = currentPose.landmarks[PoseLandmarkType.leftAnkle];
+      final noseP = nose == null ? null : mapPoint(nose);
+      final ankleP = lAnkle == null ? null : mapPoint(lAnkle);
+      debugPrint('[painter] landmarkRange x[$minX..$maxX] y[$minY..$maxY] '
+          'nose->${noseP?.dx.toStringAsFixed(0)},${noseP?.dy.toStringAsFixed(0)} '
+          'lAnkle->${ankleP?.dx.toStringAsFixed(0)},${ankleP?.dy.toStringAsFixed(0)} '
+          'screen=${size.width.toInt()}x${size.height.toInt()}');
+    }
+
     bool visible(PoseLandmark? lm) {
       if (lm == null) return false;
       return !(hideLowerBody && _lowerBody.contains(lm.type));
