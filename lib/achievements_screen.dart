@@ -168,16 +168,18 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         text: caption,
       );
       if (result.status == ShareResultStatus.success) {
-        final unlocked = await AchievementService.unlockShareAchievement();
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              unlocked
-                  ? 'Thanks for sharing! Badge unlocked.'
-                  : 'Thanks for sharing! Earn a workout badge first to unlock the Share badge.',
+        final newlyUnlocked =
+            await AchievementService.unlockShareAchievement();
+        if (newlyUnlocked) {
+          // Fresh unlock -> big celebration popup (not a subtle SnackBar).
+          if (mounted) _showUnlockCelebration(badge?.title ?? 'Share');
+        } else {
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text('Thanks for sharing!'),
             ),
-          ),
-        );
+          );
+        }
       } else {
         messenger.showSnackBar(
           const SnackBar(content: Text('Share cancelled.')),
@@ -280,7 +282,83 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     );
   }
 
-  /// Off-screen single-badge share card. Shows the FLEXWELL brand, the badge's
+  /// Big celebratory popup shown when a badge is newly unlocked from the
+  /// Achievements screen (e.g. the Share badge). Mirrors the summary screen's
+  /// gold-trophy style so the moment feels rewarding, not a subtle toast.
+  void _showUnlockCelebration(String badgeTitle) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? AppColors.darkCardFilled : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        contentPadding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: AppColors.gold,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.emoji_events_rounded,
+                  color: Colors.black, size: 40),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Badge Unlocked!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isDark ? Colors.white : AppColors.lightText,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              badgeTitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.gold,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Check the Badges tab to see it.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
+                fontSize: 12.5,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Awesome!',
+                  style: TextStyle(fontWeight: FontWeight.w900)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The off-screen single-badge share card. Shows the FLEXWELL brand, the badge's
   /// shield + name + subtitle, and a footer. Captured to a PNG when the user
   /// taps Share inside that badge's detail dialog.
   Widget _buildBadgeShareCard(_Achievement badge) {

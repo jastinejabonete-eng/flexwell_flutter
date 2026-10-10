@@ -78,9 +78,9 @@ class AchievementService {
   /// can be unlocked on first launch by tapping the share icon, before the
   /// user has done anything.
   ///
-  /// Returns true when 'share' ends up unlocked (whether newly unlocked now or
-  /// already unlocked before); false when the prerequisite isn't met (no
-  /// workout badge yet) or the write couldn't be attempted.
+  /// Returns true ONLY when this call newly unlocked it (so the UI can show a
+  /// one-time celebration popup). Returns false when the prerequisite isn't
+  /// met, the badge was already unlocked, or the write couldn't be attempted.
   static Future<bool> unlockShareAchievement() async {
     try {
       final col = await _userCollection('unlocked_achievements');
@@ -94,8 +94,8 @@ class AchievementService {
       if (!hasWorkoutBadge) return false;
       // Must match the catalog doc id ('share_achievement') so the unlocked
       // doc lines up with the catalog entry on the Achievements screen.
-      await unlockAchievement('share_achievement');
-      return true;
+      // unlockAchievement returns true only when it was newly written.
+      return await unlockAchievement('share_achievement');
     } catch (e) {
       debugPrint('unlockShareAchievement failed: $e');
       return false;
