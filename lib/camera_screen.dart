@@ -36,7 +36,11 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   );
   final _poseAnalyzer = PoseAnalyzer();
 
-  bool _isFrontCamera = true;
+  // Default to the BACK camera. A propped-up phone filming you (back camera)
+  // is how the exercises are actually performed, and its feed is un-mirrored,
+  // which is what the pose model was trained on. The front camera shows a
+  // mirrored selfie preview, which looks inverted to the user.
+  bool _isFrontCamera = false;
   bool _isBusy = false;
   bool _isStarting = false;
   bool _isSwitching = false;
