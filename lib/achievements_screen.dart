@@ -657,10 +657,15 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: const EdgeInsets.only(left: 20, right: 20, top: 12, bottom: 90),
-            child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+            // SingleChildScrollView has NO `padding` parameter -- passing one
+            // compiles but is silently dropped, so the nav bar overlapped the
+            // last badge row. Wrap the content in Padding instead.
+            child: Padding(
+              padding:
+                  const EdgeInsets.only(left: 20, right: 20, top: 12, bottom: 90),
+              child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             if (hasError)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -814,6 +819,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               },
             ),
           ],
+          ),
           ),
           ),
           // Off-screen share card: laid out so its RepaintBoundary can be

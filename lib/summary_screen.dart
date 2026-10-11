@@ -192,8 +192,12 @@ class _SummaryScreenState extends State<SummaryScreen> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-            child: ConstrainedBox(
+            // SingleChildScrollView has no `padding` param -- wrap in Padding
+            // so the horizontal/vertical insets are actually applied.
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              child: ConstrainedBox(
               constraints: BoxConstraints(
                 // Never negative, even on very short screens.
                 minHeight: (constraints.maxHeight - 32).clamp(0.0, double.infinity),
@@ -457,6 +461,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
             ),
           ),
         ),
+          ),
       ),
     );
   }
