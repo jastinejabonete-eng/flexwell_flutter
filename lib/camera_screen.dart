@@ -45,6 +45,11 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   bool _isStarting = false;
   bool _isSwitching = false;
   bool _isEnding = false;
+
+  /// False until the KNN model finishes parsing. While false the preview runs
+  /// but no verdict is issued -- the frame loop skips classification so the
+  /// camera appears instantly instead of blocking on the 2.2MB model asset.
+  bool _knnReady = false;
   bool _permissionGranted = false;
   bool _permissionPermanentlyDenied = false;
   String? _errorMessage;
@@ -159,13 +164,13 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     _poseAnalyzer.resetCalibration();
     _permissionGranted = false;
 
-    try {
-      await KnnClassifier.instance.loadFromAssets();
-    } catch (e, st) {
-      debugPrint('Failed to load KNN model: $e\n$st');
-      _fail('Could not load the posture model. Please update or reinstall the app.');
-      return;
-    }
+    // Start the camera FIRST so the preview appears immediately, and load the
+    // KNN model in parallel. The model parse (~1.8s for the 2.2MB asset) used
+    // to block before the camera even started, which read as "ML Kit takes too
+    // long to load". The preview now shows instantly and the first verdict just
+    // arrives a beat later, once _knnReady flips.
+    _knnReady = false;
+    final knnFuture = _loadKnnModel();
 
     await KnnWorker.instance.acquire(); // never throws; falls back to main isolate
 
@@ -180,6 +185,21 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     }
     _permissionGranted = true;
     await _startCamera();
+
+    await knnFuture;
+  }
+
+  /// Loads the KNN model without blocking the camera preview. On failure the
+  /// session reports the error and shows nothing but the "unavailable" state.
+  Future<void> _loadKnnModel() async {
+    try {
+      await KnnClassifier.instance.loadFromAssets();
+      if (!mounted) return;
+      setState(() => _knnReady = true);
+    } catch (e, st) {
+      debugPrint('Failed to load KNN model: $e\n$st');
+      _fail('Could not load the posture model. Please update or reinstall the app.');
+    }
   }
 
   void _resetTracking() {
@@ -342,6 +362,11 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
       if (!mounted || _isEnding) return;
 
       if (poses.isNotEmpty) {
+        // Hold the form verdict until the KNN model has finished parsing --
+        // otherwise the first frames classify against a half-loaded model. The
+        // preview is already live by now, so this is at most a ~2s wait before
+        // the first verdict instead of a ~2s wait before the camera appears.
+        if (!_knnReady) return;
         final pose = poses.first;
         final analysis = await _poseAnalyzer.analyze(widget.exercise, pose);
         if (!mounted || _isEnding) return; // state may have changed during the await

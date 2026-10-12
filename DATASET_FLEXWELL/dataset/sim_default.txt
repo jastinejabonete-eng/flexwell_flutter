@@ -1,0 +1,321 @@
+
+=== Lunge ===
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1791710219.440040   17396 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710219.498804   43932 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710219.640933   14396 landmark_projection_calculator.cc:186] Using NORM_RECT without IMAGE_DIMENSIONS is only supported for the square ROI. Provide IMAGE_DIMENSIONS or use PROJECTION_MATRIX.
+    MISS Copy of IMG_0220.mov               -> incorrect (rel=  32, ood=  0)
+W0000 00:00:1791710226.357433    6392 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710226.416991   16252 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_0221.mov               -> incorrect (rel=  46, ood=  0)
+W0000 00:00:1791710235.401081   20840 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710235.456328   20840 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0224.mov               -> correct   (rel=  33, ood=  0)
+W0000 00:00:1791710241.074866   42096 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710241.137821   42096 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_0227.mov               -> incorrect (rel=  33, ood=  0)
+W0000 00:00:1791710246.587146   44072 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710246.621880   44072 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_2649.MOV               -> correct   (rel= 158, ood=  0)
+W0000 00:00:1791710269.297266   24416 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710269.329602   37192 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_2650.MOV               -> correct   (rel= 216, ood=  0)
+W0000 00:00:1791710300.562589   27044 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710300.601972   27044 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_2651.MOV               -> correct   (rel= 209, ood=  0)
+W0000 00:00:1791710332.322880   34932 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710332.359366   34932 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_2652.MOV               -> correct   (rel= 247, ood=  0)
+  Lunge/correct: 5/8 correct = 62%
+W0000 00:00:1791710369.409530    9584 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710369.446430    9584 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_2685.MOV               -> incorrect (rel=  34, ood=  0)
+W0000 00:00:1791710378.004687    4776 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710378.043094    4776 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2686.MOV               -> correct   (rel=  33, ood=  0)
+W0000 00:00:1791710385.970385   18528 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710386.004509   18528 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_2687.MOV               -> incorrect (rel=  24, ood=  0)
+W0000 00:00:1791710391.958974    5244 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710391.994502   33976 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2688.MOV               -> correct   (rel=  16, ood=  0)
+W0000 00:00:1791710397.711590   44120 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710397.750644   17928 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2689.MOV               -> correct   (rel=  35, ood=  0)
+W0000 00:00:1791710404.801668   31696 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710404.837817    6736 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2690.MOV               -> correct   (rel=  33, ood=  0)
+W0000 00:00:1791710414.131703   43324 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710414.178726   43324 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_2691.MOV               -> incorrect (rel=  22, ood=  0)
+W0000 00:00:1791710420.525023   42656 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710420.560912   34044 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_2692.MOV               -> incorrect (rel=  21, ood=  0)
+  Lunge/incorrect: 4/8 correct = 50%
+
+=== Plank ===
+W0000 00:00:1791710426.420646   17804 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710426.468792   17804 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_0036(1).mov            -> incorrect (rel=  12, ood=  0)
+W0000 00:00:1791710428.760450   10460 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710428.809811   18900 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_0036(10).mov           -> incorrect (rel=  19, ood=  0)
+W0000 00:00:1791710431.881869   27916 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710431.923210   27916 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_0036(11).mov           -> incorrect (rel=  12, ood=  0)
+W0000 00:00:1791710433.989300   27432 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710434.028143   40008 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_0036(12).mov           -> incorrect (rel=  15, ood=  0)
+W0000 00:00:1791710436.509712   33620 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710436.547807   44528 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_0036(13).mov           -> incorrect (rel=  17, ood=  0)
+W0000 00:00:1791710439.418387   43508 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710439.458658   43508 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_0036(14).mov           -> incorrect (rel=  18, ood=  0)
+W0000 00:00:1791710442.689413   16688 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710442.735159   32956 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_0036(15).mov           -> incorrect (rel=  21, ood=  0)
+W0000 00:00:1791710446.935296   41812 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710446.979179   44764 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_0036(16).mov           -> incorrect (rel=  18, ood=  0)
+  Plank/correct: 0/8 correct = 0%
+W0000 00:00:1791710450.038181   42208 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710450.082252   42208 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0051(1).mov            -> incorrect (rel=  21, ood=  0)
+W0000 00:00:1791710453.736198    9264 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710453.782600    9264 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0051.mov               -> incorrect (rel=  21, ood=  0)
+W0000 00:00:1791710457.809597   42780 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710457.856365   22976 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0052(1).mov            -> incorrect (rel=  22, ood=  0)
+W0000 00:00:1791710461.941931   19912 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710461.984215   38868 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0052.mov               -> incorrect (rel=  22, ood=  0)
+W0000 00:00:1791710466.423018   40188 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710466.471065   30036 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0053(1).mov            -> incorrect (rel=  17, ood=  2)
+W0000 00:00:1791710469.367250   35584 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710469.411309    1780 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0053.mov               -> incorrect (rel=  17, ood=  2)
+W0000 00:00:1791710472.657890   23840 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710472.699930   23840 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0054(1).mov            -> incorrect (rel=  17, ood=  0)
+W0000 00:00:1791710476.338655   20132 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710476.385442   27156 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0054.mov               -> incorrect (rel=  17, ood=  0)
+  Plank/incorrect: 8/8 correct = 100%
+
+=== Side Plank ===
+W0000 00:00:1791710479.366312   12992 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710479.407571   12992 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0074(1).mov            -> correct   (rel=  15, ood=  0)
+W0000 00:00:1791710487.085477   38672 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710487.124477   32120 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0074.mov               -> correct   (rel=  15, ood=  0)
+W0000 00:00:1791710494.874433   43500 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710494.915536   43500 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0075(1).mov            -> correct   (rel=  15, ood=  0)
+W0000 00:00:1791710502.252855   29416 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710502.287259   29416 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0075.mov               -> correct   (rel=  15, ood=  0)
+W0000 00:00:1791710509.738075   28960 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710509.772494   28960 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_0076(1).mov            -> incorrect (rel=  15, ood=  0)
+W0000 00:00:1791710517.014930   21624 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710517.047603   21624 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_0076.mov               -> incorrect (rel=  15, ood=  0)
+W0000 00:00:1791710524.417225   43172 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710524.450844   43172 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0077(1).mov            -> correct   (rel=  20, ood=  0)
+W0000 00:00:1791710534.382902   39368 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710534.413254   39368 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0077.mov               -> correct   (rel=  20, ood=  0)
+  Side Plank/correct: 6/8 correct = 75%
+W0000 00:00:1791710543.692169   18304 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710543.724030   18304 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0090(1).mov            -> incorrect (rel=  15, ood=  0)
+W0000 00:00:1791710550.780257   17508 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710550.815749   17508 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0090.mov               -> incorrect (rel=  15, ood=  0)
+W0000 00:00:1791710558.330769   42360 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710558.368085   32628 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0091(1).mov            -> incorrect (rel=  14, ood=  0)
+W0000 00:00:1791710565.677343   30008 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710565.708145   33924 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0091.mov               -> incorrect (rel=  14, ood=  0)
+W0000 00:00:1791710572.950835    4976 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710572.987439    4976 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0092(1).mov            -> incorrect (rel=  15, ood=  0)
+W0000 00:00:1791710579.963018   33076 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710579.992736   41372 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0092.mov               -> incorrect (rel=  15, ood=  0)
+W0000 00:00:1791710587.188731   38864 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710587.219031   44348 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0093(1).mov            -> incorrect (rel=  14, ood=  0)
+W0000 00:00:1791710594.030405   31208 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710594.089853   44836 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_0093.mov               -> incorrect (rel=  14, ood=  0)
+  Side Plank/incorrect: 8/8 correct = 100%
+
+=== Squat ===
+W0000 00:00:1791710601.518445   42392 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710601.558655   42392 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS IMG_0356.mov                       -> incorrect (rel=  16, ood=  0)
+W0000 00:00:1791710604.100289   42984 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710604.140196   44980 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS IMG_0357.mov                       -> incorrect (rel=  18, ood=  0)
+W0000 00:00:1791710607.113271   44632 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710607.153269   10680 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS IMG_0358.mov                       -> incorrect (rel=  18, ood=  0)
+W0000 00:00:1791710610.491719    6736 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710610.533983    6736 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS IMG_0359.mov                       -> incorrect (rel=  15, ood=  0)
+W0000 00:00:1791710613.434803    6256 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710613.476719    6256 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  IMG_0360.mov                       -> correct   (rel=  15, ood=  0)
+W0000 00:00:1791710615.902701   13636 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710615.946028   13636 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  IMG_0361.mov                       -> correct   (rel=  15, ood=  0)
+W0000 00:00:1791710618.637570   20956 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710618.681722   18968 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  IMG_0362.mov                       -> correct   (rel=  11, ood=  0)
+W0000 00:00:1791710620.661481   17508 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710620.702359   17508 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  IMG_0363.mov                       -> correct   (rel=  12, ood=  0)
+  Squat/correct: 4/8 correct = 50%
+W0000 00:00:1791710622.883849   20368 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710622.941606   30652 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  IMG_0370.mov                       -> incorrect (rel=  15, ood=  0)
+W0000 00:00:1791710625.852025   41624 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710625.897129   42156 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  IMG_0371.mov                       -> incorrect (rel=  23, ood=  0)
+W0000 00:00:1791710629.673654   27996 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710629.716089   21092 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  IMG_0372.mov                       -> incorrect (rel=  23, ood=  1)
+W0000 00:00:1791710633.999729   20680 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710634.045986   20680 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  IMG_0373.mov                       -> incorrect (rel=  21, ood=  0)
+W0000 00:00:1791710637.682679   41040 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710637.726022   27676 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  IMG_0374.mov                       -> incorrect (rel=  22, ood=  0)
+W0000 00:00:1791710641.563970   43964 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710641.610854   43964 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS IMG_0375.mov                       -> correct   (rel=  22, ood=  1)
+W0000 00:00:1791710645.737936   17576 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710645.784426   41304 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  IMG_0376.mov                       -> incorrect (rel=  19, ood=  0)
+W0000 00:00:1791710649.101665   39708 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710649.158178   39708 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS IMG_0377.mov                       -> correct   (rel=  24, ood=  0)
+  Squat/incorrect: 6/8 correct = 75%
+
+=== Push-Up ===
+W0000 00:00:1791710652.975085   21420 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710653.019154   21420 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS IMG_0452.mov                       -> incorrect (rel=  15, ood=  0)
+W0000 00:00:1791710655.492676   21120 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710655.529353   21120 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS IMG_0453.mov                       -> incorrect (rel=  17, ood=  0)
+W0000 00:00:1791710658.413864   22496 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710658.456121   22496 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS IMG_0454.mov                       -> incorrect (rel=  13, ood=  0)
+W0000 00:00:1791710660.876087   27364 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710660.918423   27364 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS IMG_0455.mov                       -> incorrect (rel=  15, ood=  1)
+W0000 00:00:1791710663.768714   18648 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710663.812072   15052 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS IMG_0456.mov                       -> incorrect (rel=  16, ood=  0)
+W0000 00:00:1791710666.491124   33584 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710666.535149   42816 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS IMG_0457.mov                       -> incorrect (rel=  16, ood=  0)
+W0000 00:00:1791710669.240520   20956 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710669.283842   20956 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS IMG_0458.mov                       -> incorrect (rel=  13, ood=  0)
+W0000 00:00:1791710671.963089   31728 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710672.005811   19444 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS IMG_0459.mov                       -> incorrect (rel=  10, ood=  0)
+  Push-Up/correct: 0/8 correct = 0%
+W0000 00:00:1791710674.015994   44788 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710674.053411   44788 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  IMG_0466.mov                       -> incorrect (rel=  16, ood=  1)
+W0000 00:00:1791710677.137221   18944 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710677.175647   35920 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  IMG_0467.mov                       -> incorrect (rel=  24, ood=  6)
+W0000 00:00:1791710681.839229   18832 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710681.883563   18832 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  IMG_0468.mov                       -> incorrect (rel=  23, ood=  3)
+W0000 00:00:1791710685.591009   43180 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710685.637759   43180 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  IMG_0469.mov                       -> incorrect (rel=  30, ood= 18)
+W0000 00:00:1791710690.785935   23564 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710690.829406   23564 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  IMG_0470.mov                       -> incorrect (rel=  25, ood= 20)
+W0000 00:00:1791710695.087432   19068 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710695.125427   19068 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  IMG_0471.mov                       -> incorrect (rel=  25, ood=  2)
+W0000 00:00:1791710699.750030   42860 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710699.800927   42860 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  IMG_0472.mov                       -> incorrect (rel=  33, ood=  0)
+W0000 00:00:1791710705.235675   31540 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710705.279495   43652 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  IMG_0473.mov                       -> incorrect (rel=  24, ood=  7)
+  Push-Up/incorrect: 8/8 correct = 100%
+
+=== Pull-Up ===
+W0000 00:00:1791710709.656480   33620 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710709.693152   17264 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2617.MOV               -> incorrect (rel=  52, ood=  0)
+W0000 00:00:1791710716.265055   39480 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710716.300925   39480 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2618.MOV               -> incorrect (rel=  45, ood=  0)
+W0000 00:00:1791710721.790458   42424 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710721.822337   42424 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2619.MOV               -> incorrect (rel=  59, ood=  5)
+W0000 00:00:1791710728.946690    3220 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710728.982469   31696 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2620.MOV               -> incorrect (rel=  33, ood=  0)
+W0000 00:00:1791710733.058321    5468 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710733.093347   44432 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2622.MOV               -> incorrect (rel=  46, ood=  6)
+W0000 00:00:1791710738.743841   32696 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710738.780438   32696 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2623.MOV               -> incorrect (rel=  46, ood=  0)
+W0000 00:00:1791710744.259445    9884 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710744.293621    9884 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2624.MOV               -> incorrect (rel=  42, ood=  1)
+W0000 00:00:1791710749.456825   25300 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710749.490875   18496 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2625.MOV               -> incorrect (rel=  46, ood=  0)
+  Pull-Up/correct: 0/8 correct = 0%
+W0000 00:00:1791710755.093358   20404 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710755.134645   20404 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    OK  Copy of IMG_2630.MOV               -> incorrect (rel=  47, ood=  0)
+W0000 00:00:1791710762.372981   45040 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710762.410546   40920 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2633.MOV               -> correct   (rel=  45, ood=  0)
+W0000 00:00:1791710769.708541   36372 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710769.740643   36372 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2634.MOV               -> correct   (rel=  51, ood=  0)
+W0000 00:00:1791710776.564326   41628 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710776.608753   41628 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2636.MOV               -> correct   (rel=  31, ood=  0)
+W0000 00:00:1791710781.825722   32612 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710781.862657   32612 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2637.MOV               -> correct   (rel=  60, ood=  0)
+W0000 00:00:1791710789.859395    5788 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710789.896071   26728 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2638.MOV               -> correct   (rel=  66, ood=  0)
+W0000 00:00:1791710798.815670   36404 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710798.857473   36404 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2640.MOV               -> correct   (rel=  82, ood=  0)
+W0000 00:00:1791710809.855133   14648 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1791710809.895923   14648 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+    MISS Copy of IMG_2641.MOV               -> correct   (rel=  49, ood=  0)
+  Pull-Up/incorrect: 1/8 correct = 12%
+
+==================================================
+OVERALL
+  correct   : 15/48 = 31%
+  incorrect : 35/48 = 73%
+  TOTAL     : 50/96 = 52%
