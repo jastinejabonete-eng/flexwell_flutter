@@ -435,7 +435,15 @@ class PoseAnalyzer {
     if (exercise == 'Push-Up') {
       return [_pushupElbowAngle(pose), _bonusRatio(exercise, pose)];
     }
-    return [displacement, _bonusRatio(exercise, pose)]; // Pull-Up
+    // Pull-Up is 1-D on purpose. The old second feature (elbow/shoulder spread
+    // ratio) measured 0.35 sigma separation and AUC 0.587 -- barely above
+    // chance -- and a grouped-CV leave-one-out showed REMOVING it raised
+    // accuracy from 70.3% to 73.5%. None of the frame-local replacement
+    // candidates beat that: pl_elbow_asym scored 80.3% but with AUC 0.211,
+    // i.e. it predicted the label backwards and was fitting the clip set
+    // rather than form quality, so it was rejected. Pull-Up therefore ships
+    // with the vertical-displacement feature only.
+    return [displacement];
   }
 
   List<double> _lungeFeatures(Pose pose) {

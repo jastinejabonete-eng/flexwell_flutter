@@ -284,20 +284,20 @@ def raw_reference_point(exercise, lm):
 def feature_2_value(exercise, lm):
     """The second (non-displacement) feature for front/back exercises.
 
-    Squat and Pull-Up keep their original bilateral-distance ratios, which
-    already tested with usable AUC. Push-Up now uses elbow bend angle
-    (shoulder-elbow-wrist, averaged left/right) instead of an elbow-flare
-    ratio, since the ratio mostly captured how wide the elbows splay
-    outward rather than how deep the push-up went.
+    Squat keeps its torso-lean angle. Push-Up uses elbow bend angle
+    (shoulder-elbow-wrist, averaged left/right). Pull-Up has NO second feature:
+    the elbow/shoulder spread ratio measured 0.35 sigma separation and AUC
+    0.587 (barely above chance), and removing it raised grouped-CV accuracy
+    from 70.3% to 73.5%. Every frame-local replacement candidate was either
+    weaker or label-inverting (pl_elbow_asym: AUC 0.211), so Pull-Up is
+    exported 1-D. Keep this in sync with _classifierFeatures in
+    lib/pose_analyzer.dart.
     """
     if exercise == "Squat":
         return squat_torso_lean(lm)          # LEFT-SIDE camera
     elif exercise == "Push-Up":
         return pushup_body_line_angle(lm)    # LEFT-SIDE camera
-    else:  # Pull-Up
-        elbow_dist = euclidean(lm[L_ELBOW], lm[R_ELBOW])
-        shoulder_dist = euclidean(lm[L_SHOULDER], lm[R_SHOULDER])
-        return elbow_dist / shoulder_dist if shoulder_dist > 1e-6 else 0.0
+    return None                              # Pull-Up: 1-D
 
 # ---------------------------------------------------------------------------
 # CANDIDATE features (experimental, NOT used by the app yet).
@@ -534,7 +534,12 @@ def process_video_front_back(path, exercise, label, pose, video_id):
         hi = int(peak_idx[j + 1]) if j + 1 < len(peak_idx) else len(signal) - 1
         extras = dict(cands[i])
         extras["rep_rom"] = float(signal[i] - signal[lo:hi + 1].min())
-        rows.append([exercise, label, displacements[i], ratios[i], video_id, extras])
+        # Pull-Up is 1-D: feature_2_value returns None, which pandas writes as
+        # an empty cell. export_for_app.py's example_features() skips empty
+        # feature_N columns, so the exported vector is correctly length 1.
+        ratio = ratios[i]
+        rows.append([exercise, label, displacements[i],
+                     "" if ratio is None else ratio, video_id, extras])
 
     if exercise in ("Push-Up", "Squat") and len(displacements) >= 5:
         # Rest value = before any rep starts, i.e. before the first detected
