@@ -324,11 +324,17 @@ def main():
               f"std={[round(s,2) for s in data['std']]}")
 
     # Sanity check: warn if feature width varies in a way the Dart side
-    # Dart sends: Squat/Push-Up/Pull-Up = 2, Lunge = 5, Plank/Side Plank = 3.
+    # Dart sends: Squat/Push-Up = 2, Pull-Up = 1, Lunge = 5, Plank/Side Plank = 3.
     # Keep this in sync with _classifierFeatures/_lungeFeatures in
-    # lib/pose_analyzer.dart -- it is the guard that catches a train/serve
+    # Expected feature widths, mirroring _classifierFeatures() in
+    # lib/pose_analyzer.dart. This is the guard that catches a train/serve
     # feature-width mismatch, which silently destroys accuracy.
-    expected = {"Squat": 2, "Push-Up": 2, "Pull-Up": 2,
+    #
+    # Pull-Up is 1-D on purpose: its old 2nd feature (elbow/shoulder spread
+    # ratio) measured 0.35 sigma separation / AUC 0.587, and removing it raised
+    # grouped-CV accuracy 67.3% -> 74.8%. If this value ever needs to change,
+    # change it in BOTH places or the app will silently mis-score.
+    expected = {"Squat": 2, "Push-Up": 2, "Pull-Up": 1,
                 "Lunge": 5, "Plank": 3, "Side Plank": 3}
     print("\nFeature-width sanity check:")
     for exercise, data in output.items():
