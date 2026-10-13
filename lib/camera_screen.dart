@@ -901,4 +901,32 @@ class _OverlayState {
     landmarksOk: true,
     guideText: 'Position yourself in frame',
   );
+
+  /// Rebuilds the overlay only when something the user can actually SEE
+  /// changed. A new Pose arrives on every processed frame, so without this
+  /// the overlay would rebuild ~90 times a second even while the user stands
+  /// still -- wasted rebuilds, and (worse) it makes the ValueNotifier's
+  /// identity-based equality do all the work, which is fragile: any future
+  /// change that starts comparing by value would freeze the skeleton.
+  ///
+  /// `pose` is compared by reference on purpose: PoseAnalyzer hands over a new
+  /// Pose object every frame, so reference equality means "a new frame
+  /// arrived" -- exactly what should trigger a repaint. `imageSize` and
+  /// `showNeutral` are included so a camera switch or a neutral-state flip
+  /// repaints even when the pose reference happens to match.
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _OverlayState &&
+          runtimeType == other.runtimeType &&
+          pose == other.pose &&
+          isCorrect == other.isCorrect &&
+          landmarksOk == other.landmarksOk &&
+          guideText == other.guideText &&
+          showNeutral == other.showNeutral &&
+          imageSize == other.imageSize;
+
+  @override
+  int get hashCode =>
+      Object.hash(pose, isCorrect, landmarksOk, guideText, showNeutral, imageSize);
 }
