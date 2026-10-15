@@ -227,6 +227,16 @@ def run_video(path, ex, limit_frames=None):
     model = Model(ex)
     smoother = Smoother()
     fn = FEATS[ex]
+
+    # ---- calibration, ported verbatim from process_video_front_back() ----
+    # Squat and Push-Up are calibration-free. Pull-Up is NOT: its feature_1 is
+    # (ref.y - baseline_y) / baseline_scale, so without this the displacement
+    # is in raw pixels (~600) instead of normalized units (~-0.4), the peak
+    # finder sees no signal, and every clip reports "no verdict".
+    needs_calibration = ex not in ("Squat", "Push-Up")
+    calib_ys, calib_scales = [], []
+    baseline_y = baseline_scale = None
+
     verdicts, ood_frames, reliable = [], 0, 0
     frames_feat1 = []      # feature_1 per reliable frame, for peak finding
     frames_raw = []        # full feature vector per reliable frame
@@ -266,6 +276,36 @@ def run_video(path, ex, limit_frames=None):
             # No visibility gate here: process_video_front_back() accepts every
             # detected frame. Adding one would filter a different population
             # than training, and _Pt has no .visibility attribute anyway.
+
+            if needs_calibration:
+                if baseline_y is None:
+                    ref = EF.raw_reference_point(ex, lm)
+                    scale = EF.calibration_scale(ex, lm)
+                    if scale > 1e-6:
+                        calib_ys.append(ref.y)
+                        calib_scales.append(scale)
+                    if len(calib_ys) > EF.CALIBRATION_FRAMES:
+                        calib_ys.pop(0)
+                        calib_scales.pop(0)
+                    if len(calib_ys) == EF.CALIBRATION_FRAMES:
+                        mean_scale = sum(calib_scales) / len(calib_scales)
+                        y_range = max(calib_ys) - min(calib_ys)
+                        if (mean_scale > 1e-6 and
+                                y_range / mean_scale <= EF.CALIBRATION_STILLNESS_FRACTION):
+                            baseline_y = sum(calib_ys) / len(calib_ys)
+                            baseline_scale = mean_scale
+                    continue
+                # Calibrated: feature_1 is normalized vertical displacement.
+                ref = EF.raw_reference_point(ex, lm)
+                scale = EF.calibration_scale(ex, lm)
+                if scale < 1e-6 or baseline_scale < 1e-6:
+                    continue
+                disp = (ref.y - baseline_y) / baseline_scale
+                reliable += 1
+                frames_feat1.append(disp)
+                frames_raw.append([disp] + list(fn(lm)[1:]))
+                continue
+
             reliable += 1
             raw = fn(lm)
             frames_feat1.append(raw[0])
