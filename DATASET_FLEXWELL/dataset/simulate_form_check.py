@@ -104,12 +104,13 @@ def f_pushup(lm):
 
 
 def f_pullup(lm):
+    # Pull-Up is 1-D since the dead elbow/shoulder ratio feature was removed
+    # (0.35 sigma separation, AUC 0.587; removing it raised grouped-CV accuracy
+    # 67.3% -> 74.8%). The app ships mean length 1, so returning 2 values here
+    # would feed a 2-vector into a 1-D model and make every distance garbage.
     smy = (lm[L_SHOULDER].y + lm[R_SHOULDER].y) / 2
     hmy = (lm[L_HIP].y + lm[R_HIP].y) / 2
-    disp = (hmy - smy)  # vertical shoulder displacement proxy
-    ed, sd = dist(lm[L_ELBOW], lm[R_ELBOW]), dist(lm[L_SHOULDER], lm[R_SHOULDER])
-    ratio = ed / sd if sd > 1e-6 else 0.0
-    return [disp, ratio]
+    return [(hmy - smy)]  # vertical shoulder displacement only
 
 
 FEATS = {"Lunge": f_lunge, "Plank": f_plank, "Side Plank": f_plank,
@@ -159,13 +160,76 @@ class Smoother:
         return self.c >= (len(self.q) - self.c)
 
 
+# ---- engage gate: MUST mirror _isEngagedInMovement() in camera_screen.dart ----
+# The app only classifies frames where the user is actually in a rep. Without
+# this the simulator votes over resting frames too, which structurally inflates
+# correct-form scores (standing still looks like good form).
+LUNGE_ENGAGE = 150.0     # repSignal <= 150  (knee angle)
+PULLUP_ENGAGE = -0.12    # repSignal <= -0.12 (displacement, +y = downward)
+DEFAULT_ENGAGE = 0.12    # repSignal >= 0.12  (normalized displacement)
+
+
+def is_engaged(ex, rep_signal):
+    """Same comparisons as _CameraScreenState._isEngagedInMovement()."""
+    if ex == "Lunge":
+        return rep_signal <= LUNGE_ENGAGE
+    if ex == "Pull-Up":
+        return rep_signal <= PULLUP_ENGAGE
+    return rep_signal >= DEFAULT_ENGAGE
+
+
+# ---- rep-peak alignment: MUST mirror extract_features.py's row writing ----
+# The model is trained on ONE row per rep, sampled at the rep PEAK, found with
+# the trainer's exact parameters (extract_features.py:511-525):
+#     min_distance = max(int(fps * MIN_REP_SPACING_SECONDS), 3)
+#     prominence   = MIN_REP_PROMINENCE_FRACTION * amplitude
+# Both are in FRAME units on the full-resolution signal. Two earlier mistakes
+# made the verdict meaningless: (1) classifying every frame instead of peaks,
+# (2) sampling every 5th frame, which cut the peak finder's resolution to 1/5
+# so prominence fired on the wrong frames. This now matches the trainer.
+MIN_REP_PROMINENCE_FRACTION = 0.15  # extract_features.py:128
+MIN_REP_SPACING_SECONDS = 0.5       # extract_features.py:129
+REP_PEAK_SIGN = {"Squat": -1, "Push-Up": -1, "Pull-Up": -1}
+
+
+def find_rep_peaks(signal, ex, fps):
+    """Identical logic to the trainer's peak detection."""
+    from scipy.signal import find_peaks
+    s = np.asarray(signal, float) * REP_PEAK_SIGN.get(ex, 1)
+    if len(s) < 5:
+        return []
+    amplitude = float(s.max() - s.min())
+    if amplitude < 1e-6:
+        return []
+    min_distance = max(int(fps * MIN_REP_SPACING_SECONDS), 3)
+    pk, _ = find_peaks(
+        s,
+        prominence=MIN_REP_PROMINENCE_FRACTION * amplitude,
+        distance=min_distance,
+    )
+    if len(pk) == 0:
+        # Relaxed fallback, exactly as the trainer does it.
+        relaxed_prominence = 0.5 * MIN_REP_PROMINENCE_FRACTION * amplitude
+        relaxed_distance = max(min_distance // 2, 3)
+        pk, _ = find_peaks(s, prominence=relaxed_prominence,
+                           distance=relaxed_distance)
+    return [int(i) for i in pk]
+
+
 def run_video(path, ex, limit_frames=None):
     mp_pose = mp.solutions.pose
-    cap = cv2.VideoCapture(path)
+    # Use the trainer's video opener so rotation metadata is applied identically.
+    import extract_features as EF
+    cap, rotate_code = EF.open_video(path)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    if not fps or fps != fps or fps < 1:
+        fps = 30.0  # same fallback the trainer uses
     model = Model(ex)
     smoother = Smoother()
     fn = FEATS[ex]
     verdicts, ood_frames, reliable = [], 0, 0
+    frames_feat1 = []      # feature_1 per reliable frame, for peak finding
+    frames_raw = []        # full feature vector per reliable frame
     idx = 0
     with mp_pose.Pose(static_image_mode=False, model_complexity=1,
                       min_detection_confidence=0.5) as pose:
@@ -173,11 +237,15 @@ def run_video(path, ex, limit_frames=None):
             ok, frame = cap.read()
             if not ok:
                 break
+            if rotate_code is not None:
+                frame = cv2.rotate(frame, rotate_code)
             idx += 1
             if limit_frames and idx > limit_frames:
                 break
-            if idx % SAMPLE_EVERY != 0:
-                continue
+            # The extractor processes EVERY frame (no stride). Sampling here
+            # gave the peak finder 1/5 the temporal resolution, so
+            # prominence=0.15*amplitude fired on the wrong frames and the
+            # session verdict was meaningless. Match the trainer exactly.
             h, w = frame.shape[:2]
             res = pose.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             if not res.pose_landmarks:
@@ -192,18 +260,26 @@ def run_video(path, ex, limit_frames=None):
                 continue
             reliable += 1
             raw = fn(lm)
-            v, is_ood = model.classify(raw)
-            if is_ood:
-                ood_frames += 1
-                continue
-            if v is None:
-                continue
-            verdicts.append(smoother.add(v))
+            frames_feat1.append(raw[0])
+            frames_raw.append(raw)
     cap.release()
+
+    # Find rep peaks with the trainer's EXACT parameters (frame units, real fps).
+    peak_idx = find_rep_peaks(frames_feat1, ex, fps)
+    for i in peak_idx:
+        raw = frames_raw[i]
+        v, is_ood = model.classify(raw)
+        if is_ood:
+            ood_frames += 1
+            continue
+        if v is None:
+            continue
+        verdicts.append(smoother.add(v))
+
     if not verdicts:
-        return None, reliable, ood_frames
-    # session verdict = majority of engaged frames
-    return (sum(verdicts) * 2 >= len(verdicts)), reliable, ood_frames
+        return None, reliable, ood_frames, len(verdicts)
+    # session verdict = majority of rep-peak frames
+    return (sum(verdicts) * 2 >= len(verdicts)), reliable, ood_frames, len(verdicts)
 
 
 def main():
@@ -220,18 +296,19 @@ def main():
             vids = vids[:per_ex]
             hit = tot = 0
             for v in vids:
-                verdict, rel, ood = run_video(os.path.join(d, v), ex)
+                verdict, rel, ood, eng = run_video(os.path.join(d, v), ex)
                 tot += 1
                 grand[lab] += 1
                 if verdict is None:
-                    print(f"    {v[:34]:34s} -> no verdict (rel={rel}, ood={ood})")
+                    print(f"    {v[:34]:34s} -> no verdict (rel={rel}, ood={ood}, engaged={eng})")
                     continue
                 pred = "correct" if verdict else "incorrect"
                 ok = pred == lab
                 hit += 1 if ok else 0
                 grand_ok[lab] += 1 if ok else 0
                 mark = "OK " if ok else "MISS"
-                print(f"    {mark} {v[:34]:34s} -> {pred:9s} (rel={rel:4d}, ood={ood:3d})")
+                print(f"    {mark} {v[:34]:34s} -> {pred:9s} "
+                      f"(rel={rel:4d}, ood={ood:3d}, engaged={eng:4d})")
             if tot:
                 print(f"  {ex}/{lab}: {hit}/{tot} correct = {hit/tot*100:.0f}%")
     print("\n" + "=" * 50)
