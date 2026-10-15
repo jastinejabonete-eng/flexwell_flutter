@@ -228,18 +228,29 @@ def run_video(path, ex, limit_frames=None):
     smoother = Smoother()
     fn = FEATS[ex]
 
+    # ---- which trainer path does this exercise take? ----
+    # FRONT_BACK (Squat, Push-Up, Pull-Up): every frame, rep-peak rows only,
+    #   Pull-Up calibrated. SIDE_VIEW (Lunge, Plank, Side Plank): every 5th
+    #   frame, and a row for EVERY detected frame -- NO rep-peak detection.
+    # Applying peak detection to side-view exercises finds no peaks and reports
+    # "no verdict" on every clip (Side Plank scored 0% for this reason).
+    side_view = ex in EF.SIDE_VIEW_EXERCISES
+    frame_skip = 5 if side_view else 1
+
+    verdicts, ood_frames, reliable = [], 0, 0
+    frames_feat1 = []      # feature_1 per reliable frame, for peak finding
+    frames_raw = []        # full feature vector per reliable frame
+    idx = 0
+
     # ---- calibration, ported verbatim from process_video_front_back() ----
     # Squat and Push-Up are calibration-free. Pull-Up is NOT: its feature_1 is
     # (ref.y - baseline_y) / baseline_scale, so without this the displacement
     # is in raw pixels (~600) instead of normalized units (~-0.4), the peak
     # finder sees no signal, and every clip reports "no verdict".
-    needs_calibration = ex not in ("Squat", "Push-Up")
+    needs_calibration = ex not in ("Squat", "Push-Up") and not side_view
     calib_ys, calib_scales = [], []
     baseline_y = baseline_scale = None
 
-    verdicts, ood_frames, reliable = [], 0, 0
-    frames_feat1 = []      # feature_1 per reliable frame, for peak finding
-    frames_raw = []        # full feature vector per reliable frame
     idx = 0
     # Pose config MUST match extract_features.py:607 exactly:
     #     mp_pose.Pose(static_image_mode=False)
@@ -255,13 +266,13 @@ def run_video(path, ex, limit_frames=None):
                 break
             if rotate_code is not None:
                 frame = cv2.rotate(frame, rotate_code)
+            # FRONT_BACK processes EVERY frame. SIDE_VIEW samples every 5th
+            # (frame_skip = 5 in process_video_side_view). Match each path.
             idx += 1
             if limit_frames and idx > limit_frames:
                 break
-            # The extractor processes EVERY frame (no stride). Sampling here
-            # gave the peak finder 1/5 the temporal resolution, so
-            # prominence=0.15*amplitude fired on the wrong frames and the
-            # session verdict was meaningless. Match the trainer exactly.
+            if idx % frame_skip != 0:
+                continue
             h, w = frame.shape[:2]
             res = pose.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             if not res.pose_landmarks:
@@ -312,9 +323,15 @@ def run_video(path, ex, limit_frames=None):
             frames_raw.append(raw)
     cap.release()
 
-    # Find rep peaks with the trainer's EXACT parameters (frame units, real fps).
-    peak_idx = find_rep_peaks(frames_feat1, ex, fps)
-    for i in peak_idx:
+    # SIDE_VIEW writes a row for EVERY sampled frame (no rep peaks), so
+    # classify them all. FRONT_BACK writes only rep-peak rows, so classify
+    # only the peaks the trainer would have written.
+    if side_view:
+        classify_idx = range(len(frames_raw))
+    else:
+        classify_idx = find_rep_peaks(frames_feat1, ex, fps)
+
+    for i in classify_idx:
         raw = frames_raw[i]
         v, is_ood = model.classify(raw)
         if is_ood:
