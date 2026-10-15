@@ -231,8 +231,14 @@ def run_video(path, ex, limit_frames=None):
     frames_feat1 = []      # feature_1 per reliable frame, for peak finding
     frames_raw = []        # full feature vector per reliable frame
     idx = 0
-    with mp_pose.Pose(static_image_mode=False, model_complexity=1,
-                      min_detection_confidence=0.5) as pose:
+    # Pose config MUST match extract_features.py:607 exactly:
+    #     mp_pose.Pose(static_image_mode=False)
+    # The simulator previously forced model_complexity=1 and
+    # min_detection_confidence=0.5, which loads a DIFFERENT model. On
+    # Squat/correct/IMG_0356.mov that picked frame 43 (knee 45.4 deg) where the
+    # trainer stored knee 39.9 deg -- different landmarks, so a different rep
+    # peak and a wrong verdict. Same clip, same rep, different model.
+    with mp_pose.Pose(static_image_mode=False) as pose:
         while cap.isOpened():
             ok, frame = cap.read()
             if not ok:
@@ -250,14 +256,16 @@ def run_video(path, ex, limit_frames=None):
             res = pose.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             if not res.pose_landmarks:
                 continue
-            lm = res.pose_landmarks.landmark
-            need = [L_SHOULDER, L_HIP, L_KNEE, L_ANKLE]
-            if ex == "Push-Up":
-                need = [L_SHOULDER, L_ELBOW, L_WRIST, L_HIP, L_ANKLE]
-            if ex == "Pull-Up":
-                need = [L_SHOULDER, R_SHOULDER, L_ELBOW, R_ELBOW]
-            if any(lm[i].visibility < 0.6 for i in need):
-                continue
+            # Convert to PIXEL landmarks exactly as the trainer does
+            # (extract_features.py:170). MediaPipe returns x/y normalized
+            # SEPARATELY by width and height, so on a non-square frame angles
+            # are anisotropically distorted -- and ML Kit on the phone returns
+            # isotropic pixels. Passing raw normalized landmarks here made every
+            # angle wrong (knee min 45.4 deg where the trainer measures 40.5).
+            lm = EF.to_pixel_landmarks(res.pose_landmarks.landmark, w, h)
+            # No visibility gate here: process_video_front_back() accepts every
+            # detected frame. Adding one would filter a different population
+            # than training, and _Pt has no .visibility attribute anyway.
             reliable += 1
             raw = fn(lm)
             frames_feat1.append(raw[0])
