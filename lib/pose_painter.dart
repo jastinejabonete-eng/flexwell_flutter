@@ -75,7 +75,19 @@ class PosePainter extends CustomPainter {
           PoseLandmarkType.leftElbow,
           PoseLandmarkType.rightElbow,
         };
-      default: // Lunge, Plank, Side Plank
+      case 'Plank':
+      case 'Side Plank':
+        // _plankStyleFeatures() force-unwraps the left elbow for the
+        // shoulder-to-elbow offset feature, so it MUST be in this set. Without
+        // it a missing elbow throws and a low-confidence one silently distorts
+        // the feature -- the reliability gate never checked it.
+        return {
+          PoseLandmarkType.leftShoulder,
+          PoseLandmarkType.leftElbow,
+          PoseLandmarkType.leftHip,
+          PoseLandmarkType.leftAnkle,
+        };
+      default: // Lunge
         return {
           PoseLandmarkType.leftShoulder,
           PoseLandmarkType.leftHip,
@@ -217,7 +229,13 @@ class PosePainter extends CustomPainter {
 
     final joints = <Offset>[];
     for (final landmark in currentPose.landmarks.values) {
-      if (visible(landmark)) joints.add(mapPoint(landmark));
+      // Check each landmark's own likelihood, not just the required set.
+      // Without this, a low-confidence joint (e.g. an occluded wrist) is drawn
+      // as a solid dot, making the skeleton look more certain than the pose
+      // estimate actually is.
+      if (visible(landmark) && landmark.likelihood >= minLikelihood) {
+        joints.add(mapPoint(landmark));
+      }
     }
     if (joints.isNotEmpty) {
       canvas.drawPoints(ui.PointMode.points, joints, pointPaint);

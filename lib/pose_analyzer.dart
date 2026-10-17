@@ -186,6 +186,10 @@ class PoseAnalyzer {
   double? _baselineY;
   double? _baselineScale;
   static const int _calibrationFrameCount = 10;
+  /// Stillness threshold for calibration, matching the trainer's
+  /// CALIBRATION_STILLNESS_FRACTION (extract_features.py:94). The calibration
+  /// window is only accepted when y_range / mean_scale <= this value.
+  static const double _calibrationStillnessFraction = 0.06;
 
   // Must match the engage thresholds in camera_screen.dart.
   static const double _engageThreshold = 0.12;
@@ -392,9 +396,24 @@ class PoseAnalyzer {
     if (scale < 1e-6) return false;
     _calibrationYs.add(ref.y);
     _calibrationScales.add(scale);
-    if (_calibrationYs.length >= _calibrationFrameCount) {
-      _baselineY = _calibrationYs.reduce((a, b) => a + b) / _calibrationYs.length;
-      _baselineScale = _calibrationScales.reduce((a, b) => a + b) / _calibrationScales.length;
+    // Keep only the last _calibrationFrameCount samples (sliding window).
+    if (_calibrationYs.length > _calibrationFrameCount) {
+      _calibrationYs.removeAt(0);
+      _calibrationScales.removeAt(0);
+    }
+    if (_calibrationYs.length == _calibrationFrameCount) {
+      // Stillness check: the window must be stable before locking the baseline.
+      // The trainer uses CALIBRATION_STILLNESS_FRACTION = 0.06 (y_range / mean_scale).
+      // Without this, a user who is still moving gets a poor baseline, which
+      // directly affects Pull-Up's displacement feature and rep timing.
+      final meanScale =
+          _calibrationScales.reduce((a, b) => a + b) / _calibrationScales.length;
+      final yRange = _calibrationYs.reduce((a, b) => a > b ? a : b) -
+          _calibrationYs.reduce((a, b) => a < b ? a : b);
+      if (meanScale > 1e-6 && yRange / meanScale <= _calibrationStillnessFraction) {
+        _baselineY = _calibrationYs.reduce((a, b) => a + b) / _calibrationYs.length;
+        _baselineScale = meanScale;
+      }
     }
     return _baselineY != null;
   }
@@ -497,11 +516,17 @@ class PoseAnalyzer {
 
   /// Classifies the stored peak of the current rep ONCE and stores the verdict.
   /// Returns false (and commits nothing) if the model can't give a verdict.
-  Future<bool> _commitRepVerdict(String exercise, String reason) async {
+  /// Returns a verdict, or null when the pose is out-of-distribution (unfamiliar
+  /// form) or the model is genuinely unavailable. The caller must distinguish
+  /// these two cases -- collapsing both to "Form model unavailable" tells the
+  /// user their pose is unfamiliar when really the model just isn't loaded.
+  Future<bool?> _commitRepVerdict(String exercise, String reason) async {
     final features = _peakFeatures;
-    if (features == null) return false;
-    final verdict = await KnnWorker.instance.classify(exercise, features);
-    if (verdict == null) return false;
+    if (features == null) return null;
+    final detailed = await KnnWorker.instance.classifyDetailed(exercise, features);
+    if (detailed.isOutOfDistribution) return null; // unfamiliar form, not a model error
+    final verdict = detailed.isCorrect;
+    if (verdict == null) return null; // model unavailable
     _repCommitted = true;
     _repVerdict = verdict;
     _verdictHoldFramesLeft = verdict ? 0 : _verdictHoldFrames;
@@ -510,7 +535,7 @@ class PoseAnalyzer {
           'signal=${_peakSignal.toStringAsFixed(2)} '
           'verdict=$verdict');
     }
-    return true;
+    return verdict;
   }
 
   /// Judge a rep that is still in progress when the session ends, so a squat
@@ -634,7 +659,7 @@ class PoseAnalyzer {
         }
         // Peak TIMING: based on displacement, used only to decide when the
         // bottom of the rep has been reached.
-        if (!_hasPeakSignal || signal > _peakSignal) {
+        if (!_hasPeakSignal || signal > _peakSignal!) {
           _hasPeakSignal = true;
           _peakSignal = signal;
           _framesSincePeak = 0;
@@ -647,7 +672,7 @@ class PoseAnalyzer {
           final dwelling = _peakSignal >= _dwellMinPeak && _framesSincePeak >= _dwellFrames;
           if (reversed || dwelling) {
             final ok = await _commitRepVerdict(exercise, reversed ? 'reversal' : 'dwell');
-            if (!ok) {
+            if (ok == null) {
               return AnalysisResult(false, 'Form model unavailable', repSignal, landmarksReliable: false);
             }
           }
