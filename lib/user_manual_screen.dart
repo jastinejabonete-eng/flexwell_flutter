@@ -1,71 +1,11 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
+import 'exercise_camera_guide.dart';
+import 'onboarding_tour_steps.dart';
 
 // -----------------------------------------------------------------------------
 // Content
 // -----------------------------------------------------------------------------
-
-class _CameraGuide {
-  final String exercise;
-  final String view;
-  final String setup;
-  final bool repBased;
-  final bool calibrates;
-
-  const _CameraGuide(
-    this.exercise,
-    this.view,
-    this.setup, {
-    required this.repBased,
-    required this.calibrates,
-  });
-}
-
-// Views match what PoseAnalyzer / the KNN model were trained on.
-const List<_CameraGuide> _guides = [
-  _CameraGuide(
-    'Squat',
-    'Left side view',
-    'Turn so your left side faces the camera. Your left shoulder, hip, knee and ankle all need to stay visible.',
-    repBased: true,
-    calibrates: true,
-  ),
-  _CameraGuide(
-    'Push-Up',
-    'Left side view',
-    'Turn so your left side faces the camera. Your left shoulder, elbow, wrist, hip and ankle should stay visible through the whole movement.',
-    repBased: true,
-    calibrates: true,
-  ),
-  _CameraGuide(
-    'Pull-Up',
-    'Back view',
-    'Put the camera behind you so both shoulders and both elbows are visible.',
-    repBased: true,
-    calibrates: true,
-  ),
-  _CameraGuide(
-    'Lunge',
-    'Left side view',
-    'Turn so your left side faces the camera. Your left shoulder, hip, knee and ankle should all be in frame.',
-    repBased: true,
-    calibrates: false,
-  ),
-  _CameraGuide(
-    'Plank',
-    'Left side view',
-    'Turn so your left side faces the camera, with a clear line from your shoulder to your ankle.',
-    repBased: false,
-    calibrates: false,
-  ),
-  _CameraGuide(
-    'Side Plank',
-    'Left side view',
-    'Turn so your left side faces the camera. Keep your shoulder, hip and ankle in view.',
-    repBased: false,
-    calibrates: false,
-  ),
-];
 
 class _Badge {
   final IconData icon;
@@ -75,20 +15,48 @@ class _Badge {
 }
 
 const List<_Badge> _badges = [
-  _Badge(Icons.workspace_premium_rounded, 'First Milestone', 'Finish your first workout scan.'),
-  _Badge(Icons.fitness_center_rounded, 'Determination', 'Work out 3 days in a row.'),
+  _Badge(
+    Icons.workspace_premium_rounded,
+    'First Milestone',
+    'Finish your first workout scan.',
+  ),
+  _Badge(
+    Icons.fitness_center_rounded,
+    'Determination',
+    'Work out 3 days in a row.',
+  ),
   _Badge(Icons.shield_rounded, 'Iron Core', 'Hold a Plank for 60 seconds.'),
-  _Badge(Icons.verified_rounded, 'Form Master', 'Score over 90% accuracy in a Squat session.'),
+  _Badge(
+    Icons.verified_rounded,
+    'Form Master',
+    'Score over 90% accuracy in a Squat session.',
+  ),
   _Badge(Icons.bolt_rounded, 'Gym Warrior', 'Scan all 6 exercises.'),
-  _Badge(Icons.star_rounded, 'Flawless Form', 'Finish 5 reps with perfect form in one session.'),
+  _Badge(
+    Icons.star_rounded,
+    'Flawless Form',
+    'Finish 5 reps with perfect form in one session.',
+  ),
   _Badge(Icons.handshake_rounded, 'Share', 'Tap Share on the Badges tab.'),
 ];
 
 const List<(String, String)> _quickStart = [
-  ('Pick an exercise', 'Choose one on the Dashboard, or tap Scan Now under a tutorial video.'),
-  ('Set up your phone', 'Prop it up so your whole body is in frame. Check the camera angle for your exercise below.'),
-  ('Move and watch the skeleton', 'Green means good form. Red means adjust, and a tip appears on screen.'),
-  ('Tap Stop when you finish', 'You get your accuracy score, plus your reps or your longest hold.'),
+  (
+    'Pick an exercise',
+    'Choose one on the Dashboard, or tap Scan Now under a tutorial video.',
+  ),
+  (
+    'Set up your phone',
+    'Prop it up so your whole body is in frame. Check the camera angle for your exercise below.',
+  ),
+  (
+    'Move and watch the skeleton',
+    'Green means good form. Red means adjust, and a tip appears on screen.',
+  ),
+  (
+    'Tap Stop when you finish',
+    'You get your accuracy score, plus your reps or your longest hold.',
+  ),
 ];
 
 class _Tone {
@@ -99,13 +67,13 @@ class _Tone {
   final Color border;
   final Color accent;
 
-  _Tone(this.isDark)
-      : text = isDark ? Colors.white : AppColors.lightText,
-        sub = isDark ? Colors.white70 : AppColors.lightTextSecondary,
-        card = isDark ? AppColors.darkCardFilled : Colors.white,
-        border = isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.lightBorder,
-        // Volt green is unreadable as text on white, so light mode uses the brand blue.
-        accent = isDark ? AppColors.accent : AppColors.primary;
+  _Tone(ThemeData theme)
+    : isDark = theme.brightness == Brightness.dark,
+      text = theme.colorScheme.onSurface,
+      sub = theme.colorScheme.onSurfaceVariant,
+      card = theme.colorScheme.surface,
+      border = theme.colorScheme.outlineVariant,
+      accent = theme.colorScheme.primary;
 }
 
 // -----------------------------------------------------------------------------
@@ -125,38 +93,50 @@ class _UserManualScreenState extends State<UserManualScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final t = _Tone(Theme.of(context).brightness == Brightness.dark);
+    final t = _Tone(Theme.of(context));
 
     return Scaffold(
-      backgroundColor: t.isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      backgroundColor: t.isDark
+          ? AppColors.darkBackground
+          : AppColors.lightBackground,
       appBar: AppBar(
-        title: Text(
-          'USER MANUAL',
-          style: TextStyle(
-            color: t.text,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.2,
-            fontSize: 22,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        title: const Text('User manual'),
       ),
       body: ListView(
-        padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 100),
+        padding: const EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 8,
+          bottom: 100,
+        ),
         children: [
           _hero(t),
           const SizedBox(height: 28),
 
-          _sectionHeader(t, 'Quick start', 'Four steps from tapping an exercise to your first score.'),
-          _quickStartCard(t),
+          _sectionHeader(
+            t,
+            'Quick start',
+            'Four steps from tapping an exercise to your first score.',
+          ),
+          KeyedSubtree(
+            key: OnboardingTourAnchors.manualQuickStart,
+            child: _quickStartCard(t),
+          ),
           const SizedBox(height: 28),
 
-          _sectionHeader(t, 'Reading the skeleton', 'Tap each one to see what you will get on screen.'),
+          _sectionHeader(
+            t,
+            'Reading the skeleton',
+            'Tap each one to see what you will get on screen.',
+          ),
           _formPreview(t),
           const SizedBox(height: 28),
 
-          _sectionHeader(t, 'Where to put your camera', 'The form check is trained on specific views, so the angle matters.'),
+          _sectionHeader(
+            t,
+            'Where to put your camera',
+            'The form check is trained on specific views, so the angle matters.',
+          ),
           _cameraGuide(t),
           const SizedBox(height: 28),
 
@@ -186,7 +166,7 @@ class _UserManualScreenState extends State<UserManualScreen> {
           _faq(
             t,
             'It says "Calibrating"',
-            'Squat, Push-Up and Pull-Up learn your starting position from your first few frames. Hold still in your start pose for about a second.',
+            'Squat, Push-Up and Pull-Up calibrate from a stable one-second window. Hold the required starting pose still and keep all the joints listed in the camera guide visible.',
           ),
           _faq(
             t,
@@ -228,11 +208,18 @@ class _UserManualScreenState extends State<UserManualScreen> {
         children: [
           Text(
             title,
-            style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: t.text),
+            style: TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+              color: t.text,
+            ),
           ),
           if (subtitle != null) ...[
             const SizedBox(height: 4),
-            Text(subtitle, style: TextStyle(fontSize: 13, color: t.sub, height: 1.4)),
+            Text(
+              subtitle,
+              style: TextStyle(fontSize: 13, color: t.sub, height: 1.4),
+            ),
           ],
         ],
       ),
@@ -245,12 +232,15 @@ class _UserManualScreenState extends State<UserManualScreen> {
       selected: selected,
       onSelected: (_) => onTap(),
       showCheckmark: false,
+      materialTapTargetSize: MaterialTapTargetSize.padded,
       labelStyle: TextStyle(
         color: selected ? Colors.black : t.text,
         fontWeight: selected ? FontWeight.bold : FontWeight.w500,
         fontSize: 13,
       ),
-      backgroundColor: t.isDark ? const Color(0xFF2A303A) : const Color(0xFFF1F5F9),
+      backgroundColor: t.isDark
+          ? const Color(0xFF2A303A)
+          : const Color(0xFFF1F5F9),
       selectedColor: AppColors.accent,
       side: BorderSide(color: selected ? AppColors.accent : t.border),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -271,7 +261,11 @@ class _UserManualScreenState extends State<UserManualScreen> {
           const SizedBox(width: 6),
           Text(
             label,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: t.accent),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: t.accent,
+            ),
           ),
         ],
       ),
@@ -292,7 +286,9 @@ class _UserManualScreenState extends State<UserManualScreen> {
               : [const Color(0xFF0D47A1), const Color(0xFF1976D2)],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: t.isDark ? Border.all(color: AppColors.accent.withValues(alpha: 0.25)) : null,
+        border: t.isDark
+            ? Border.all(color: AppColors.accent.withValues(alpha: 0.25))
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -305,13 +301,21 @@ class _UserManualScreenState extends State<UserManualScreen> {
                   color: AppColors.accent.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.menu_book_rounded, color: AppColors.accent, size: 28),
+                child: const Icon(
+                  Icons.menu_book_rounded,
+                  color: AppColors.accent,
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 16),
               const Expanded(
                 child: Text(
                   'Your form coach, one tap away',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ],
@@ -319,7 +323,11 @@ class _UserManualScreenState extends State<UserManualScreen> {
           const SizedBox(height: 12),
           Text(
             'Set up your phone, read the skeleton, and keep your streak going.',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13, height: 1.4),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 13,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 14),
           Wrap(
@@ -350,7 +358,11 @@ class _UserManualScreenState extends State<UserManualScreen> {
           const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -399,18 +411,28 @@ class _UserManualScreenState extends State<UserManualScreen> {
                   const SizedBox(width: 14),
                   Expanded(
                     child: Padding(
-                      padding: EdgeInsets.only(bottom: i < _quickStart.length - 1 ? 18 : 0),
+                      padding: EdgeInsets.only(
+                        bottom: i < _quickStart.length - 1 ? 18 : 0,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             _quickStart[i].$1,
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: t.text),
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: t.text,
+                            ),
                           ),
                           const SizedBox(height: 3),
                           Text(
                             _quickStart[i].$2,
-                            style: TextStyle(fontSize: 13, height: 1.45, color: t.sub),
+                            style: TextStyle(
+                              fontSize: 13,
+                              height: 1.45,
+                              color: t.sub,
+                            ),
                           ),
                         ],
                       ),
@@ -436,8 +458,18 @@ class _UserManualScreenState extends State<UserManualScreen> {
           Wrap(
             spacing: 8,
             children: [
-              _choice(t, 'Good form', good, () => setState(() => _showGoodForm = true)),
-              _choice(t, 'Needs work', !good, () => setState(() => _showGoodForm = false)),
+              _choice(
+                t,
+                'Good form',
+                good,
+                () => setState(() => _showGoodForm = true),
+              ),
+              _choice(
+                t,
+                'Needs work',
+                !good,
+                () => setState(() => _showGoodForm = false),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -462,14 +494,22 @@ class _UserManualScreenState extends State<UserManualScreen> {
                       children: [
                         Text(
                           good ? 'Green skeleton' : 'Red skeleton',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: color),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: color,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           good
                               ? 'On-screen message: "Good form"'
                               : 'On-screen message (Squat): "Check your depth and keep your chest up"',
-                          style: TextStyle(fontSize: 13, height: 1.4, color: t.sub),
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.4,
+                            color: t.sub,
+                          ),
                         ),
                       ],
                     ),
@@ -484,7 +524,8 @@ class _UserManualScreenState extends State<UserManualScreen> {
   }
 
   Widget _cameraGuide(_Tone t) {
-    final g = _guides[_guideIndex];
+    final guides = ExerciseCameraGuide.all;
+    final g = guides[_guideIndex];
 
     return _card(
       t,
@@ -498,8 +539,13 @@ class _UserManualScreenState extends State<UserManualScreen> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (var i = 0; i < _guides.length; i++)
-                  _choice(t, _guides[i].exercise, i == _guideIndex, () => setState(() => _guideIndex = i)),
+                for (var i = 0; i < guides.length; i++)
+                  _choice(
+                    t,
+                    guides[i].exercise,
+                    i == _guideIndex,
+                    () => setState(() => _guideIndex = i),
+                  ),
               ],
             ),
             const SizedBox(height: 16),
@@ -516,7 +562,10 @@ class _UserManualScreenState extends State<UserManualScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            Text(g.setup, style: TextStyle(fontSize: 14, height: 1.5, color: t.text)),
+            Text(
+              g.setup,
+              style: TextStyle(fontSize: 14, height: 1.5, color: t.text),
+            ),
             if (g.calibrates) ...[
               const SizedBox(height: 12),
               Row(
@@ -527,7 +576,11 @@ class _UserManualScreenState extends State<UserManualScreen> {
                   Expanded(
                     child: Text(
                       'Hold your starting position for about a second. The app shows "Calibrating" while it learns your baseline.',
-                      style: TextStyle(fontSize: 12.5, height: 1.45, color: t.sub),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        height: 1.45,
+                        color: t.sub,
+                      ),
                     ),
                   ),
                 ],
@@ -552,9 +605,19 @@ class _UserManualScreenState extends State<UserManualScreen> {
         children: [
           Icon(icon, color: t.accent, size: 22),
           const SizedBox(height: 10),
-          Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: t.text)),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: t.text,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(body, style: TextStyle(fontSize: 12.5, height: 1.4, color: t.sub)),
+          Text(
+            body,
+            style: TextStyle(fontSize: 12.5, height: 1.4, color: t.sub),
+          ),
         ],
       ),
     );
@@ -568,13 +631,21 @@ class _UserManualScreenState extends State<UserManualScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: _tipTile(t, Icons.light_mode_rounded, 'Good lighting',
-                    'Face a light source. Dim rooms make tracking drop out.'),
+                child: _tipTile(
+                  t,
+                  Icons.light_mode_rounded,
+                  'Good lighting',
+                  'Face a light source. Dim rooms make tracking drop out.',
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _tipTile(t, Icons.straighten_rounded, 'Give it space',
-                    'Stand a couple of metres back so you fit head to toe.'),
+                child: _tipTile(
+                  t,
+                  Icons.straighten_rounded,
+                  'Give it space',
+                  'Stand a couple of metres back so you fit head to toe.',
+                ),
               ),
             ],
           ),
@@ -585,13 +656,21 @@ class _UserManualScreenState extends State<UserManualScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: _tipTile(t, Icons.checkroom_rounded, 'Fitted clothes',
-                    'Baggy clothes can hide your joints from the tracker.'),
+                child: _tipTile(
+                  t,
+                  Icons.checkroom_rounded,
+                  'Fitted clothes',
+                  'Baggy clothes can hide your joints from the tracker.',
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _tipTile(t, Icons.person_rounded, 'Just you in frame',
-                    'One person in view keeps the skeleton on you.'),
+                child: _tipTile(
+                  t,
+                  Icons.person_rounded,
+                  'Just you in frame',
+                  'One person in view keeps the skeleton on you.',
+                ),
               ),
             ],
           ),
@@ -609,7 +688,10 @@ class _UserManualScreenState extends State<UserManualScreen> {
           Icon(icon, size: 18, color: t.accent),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(text, style: TextStyle(fontSize: 13.5, height: 1.45, color: t.text)),
+            child: Text(
+              text,
+              style: TextStyle(fontSize: 13.5, height: 1.45, color: t.text),
+            ),
           ),
         ],
       ),
@@ -624,19 +706,36 @@ class _UserManualScreenState extends State<UserManualScreen> {
         children: [
           Text(
             'How your streak works',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: t.text),
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: t.text,
+            ),
           ),
           const SizedBox(height: 12),
-          _ruleLine(t, Icons.local_fire_department_rounded,
-              'Finish a workout to add a day. Several workouts in one day still count as one day.'),
-          _ruleLine(t, Icons.schedule_rounded,
-              'A workout needs about 3 seconds of tracked movement to count.'),
-          _ruleLine(t, Icons.warning_amber_rounded,
-              'Miss a whole day and your streak starts over. The Dashboard warns you when it is at risk.'),
+          _ruleLine(
+            t,
+            Icons.local_fire_department_rounded,
+            'Finish a workout to add a day. Several workouts in one day still count as one day.',
+          ),
+          _ruleLine(
+            t,
+            Icons.schedule_rounded,
+            'A workout needs about 3 seconds of tracked movement to count.',
+          ),
+          _ruleLine(
+            t,
+            Icons.warning_amber_rounded,
+            'Miss a whole day and your streak starts over. The Dashboard warns you when it is at risk.',
+          ),
           Divider(color: t.border, height: 28),
           Text(
             'Badges to earn',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: t.text),
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: t.text,
+            ),
           ),
           const SizedBox(height: 12),
           for (var i = 0; i < _badges.length; i++)
@@ -659,7 +758,11 @@ class _UserManualScreenState extends State<UserManualScreen> {
                       children: [
                         Text(
                           _badges[i].name,
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: t.text),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: t.text,
+                          ),
                         ),
                         Text(
                           _badges[i].how,
@@ -716,10 +819,17 @@ class _UserManualScreenState extends State<UserManualScreen> {
           collapsedShape: const Border(),
           title: Text(
             question,
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: t.text),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: t.text,
+            ),
           ),
           children: [
-            Text(answer, style: TextStyle(fontSize: 13.5, height: 1.5, color: t.sub)),
+            Text(
+              answer,
+              style: TextStyle(fontSize: 13.5, height: 1.5, color: t.sub),
+            ),
           ],
         ),
       ),

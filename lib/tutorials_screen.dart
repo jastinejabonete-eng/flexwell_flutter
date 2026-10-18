@@ -3,6 +3,8 @@ import 'package:video_player/video_player.dart';
 import 'app_colors.dart';
 import 'camera_screen.dart';
 import 'fade_route.dart';
+import 'exercise_camera_setup_dialog.dart';
+import 'onboarding_tour_steps.dart';
 
 class TutorialsScreen extends StatefulWidget {
   const TutorialsScreen({super.key});
@@ -67,34 +69,85 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryTextColor = isDark ? Colors.white : AppColors.lightText;
     final cardBg = isDark ? AppColors.darkCardFilled : Colors.white;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final bannerHeight = (160 * textScale).clamp(160.0, 240.0);
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      backgroundColor: isDark
+          ? AppColors.darkBackground
+          : AppColors.lightBackground,
       appBar: AppBar(
-        title: Text(
-          'TUTORIALS',
-          style: TextStyle(
-            color: primaryTextColor,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.2,
-            fontSize: 22,
-          ),
-        ),
+        title: const Text('Tutorials'),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: ListView.builder(
         padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 90),
-        itemCount: _localTutorials.length,
+        itemCount: _localTutorials.length + 1,
         itemBuilder: (context, index) {
-          final data = _localTutorials[index];
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(4, 4, 4, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Learn the movement first',
+                    key: OnboardingTourAnchors.tutorials,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: primaryTextColor,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Watch a demonstration, then start a scan with the right camera setup.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: isDark
+                          ? Colors.white70
+                          : AppColors.lightTextSecondary,
+                      height: 1.45,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Semantics(
+                    label: 'Six exercise tutorials',
+                    excludeSemantics: true,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.voltFor(
+                          isDark,
+                        ).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '6 exercise guides',
+                        style: TextStyle(
+                          color: AppColors.voltFor(isDark),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final cardIndex = index - 1;
+          final data = _localTutorials[cardIndex];
           final String exercise = data['exercise'] ?? '';
           final String title = data['title'] ?? '';
           final String subtitle = data['subtitle'] ?? '';
           final String imageAsset = data['imageAsset'] ?? '';
           final String videoAsset = data['videoAsset'] ?? '';
 
-          final isExpanded = _expandedIndex == index;
+          final isExpanded = _expandedIndex == cardIndex;
 
           return Container(
             margin: const EdgeInsets.only(bottom: 16),
@@ -104,7 +157,9 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
               border: Border.all(
                 color: isExpanded
                     ? AppColors.voltFor(isDark)
-                    : (isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.lightBorder),
+                    : (isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : AppColors.lightBorder),
                 width: isExpanded ? 2 : 1,
               ),
             ),
@@ -113,7 +168,7 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
               children: [
                 // Exercise Banner Card
                 SizedBox(
-                  height: 160,
+                  height: bannerHeight,
                   child: Stack(
                     children: [
                       Positioned.fill(
@@ -145,12 +200,15 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
                       Positioned(
                         left: 16,
                         bottom: 16,
+                        right: 16,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               title,
-                              style: const TextStyle(
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
                                 color: AppColors.accent,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w900,
@@ -160,7 +218,9 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
                             const SizedBox(height: 4),
                             Text(
                               subtitle,
-                              style: const TextStyle(
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
@@ -171,32 +231,72 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
                       ),
                       Positioned(
                         right: 16,
-                        bottom: 16,
+                        top: 16,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          constraints: const BoxConstraints(minHeight: 48),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                          ),
                           decoration: BoxDecoration(
-                            color: isExpanded ? AppColors.accent : Colors.black54,
+                            color: isExpanded
+                                ? AppColors.accent
+                                : Colors.black54,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Text(
-                            isExpanded ? 'Close Video' : 'Watch Video',
-                            style: TextStyle(
-                              color: isExpanded ? Colors.black : Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isExpanded
+                                    ? Icons.keyboard_arrow_up_rounded
+                                    : Icons.play_arrow_rounded,
+                                color: isExpanded
+                                    ? Colors.black
+                                    : Colors.white,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isExpanded ? 'Close tutorial' : 'Watch tutorial',
+                                maxLines: 1,
+                                softWrap: false,
+                                style: TextStyle(
+                                  color: isExpanded
+                                      ? Colors.black
+                                      : Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                       Positioned.fill(
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                _expandedIndex = isExpanded ? null : index;
-                              });
-                            },
+                        child: Semantics(
+                          button: true,
+                          expanded: isExpanded,
+                          onTap: () {
+                            setState(() {
+                              _expandedIndex = isExpanded ? null : cardIndex;
+                            });
+                          },
+                          label: isExpanded
+                              ? 'Close $exercise tutorial video'
+                              : 'Watch $exercise tutorial video',
+                          child: ExcludeSemantics(
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _expandedIndex = isExpanded
+                                        ? null
+                                        : cardIndex;
+                                  });
+                                },
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -289,18 +389,30 @@ class _AssetVideoPlayerState extends State<_AssetVideoPlayer> {
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.accent,
         foregroundColor: Colors.black,
+        minimumSize: const Size(48, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
       icon: const Icon(Icons.camera_alt_rounded, size: 14),
       label: const Text(
         'SCAN NOW',
         style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
       ),
-      onPressed: () {
+      onPressed: () async {
         if (_isInitialized) _controller?.pause();
-        Navigator.push(
+        final shouldStart = await showExerciseCameraSetup(
           context,
-          fadeRoute(CameraScreen(exercise: widget.exercise)),
+          widget.exercise,
         );
+        if (!mounted) return;
+        if (shouldStart) {
+          await Navigator.push(
+            context,
+            fadeRoute(CameraScreen(exercise: widget.exercise)),
+          );
+        }
+        if (mounted && _isInitialized) {
+          await _controller?.play();
+        }
       },
     );
   }
@@ -314,7 +426,11 @@ class _AssetVideoPlayerState extends State<_AssetVideoPlayer> {
       child = Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.videocam_off_rounded, color: Colors.white54, size: 32),
+          const Icon(
+            Icons.videocam_off_rounded,
+            color: Colors.white54,
+            size: 32,
+          ),
           const SizedBox(height: 8),
           const Text(
             'Video unavailable',
@@ -340,9 +456,20 @@ class _AssetVideoPlayerState extends State<_AssetVideoPlayer> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
+                  tooltip: controller.value.isPlaying
+                      ? 'Pause ${widget.exercise} video'
+                      : 'Play ${widget.exercise} video',
+                  constraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black54,
+                    foregroundColor: Colors.white,
+                  ),
                   icon: Icon(
                     controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
-                    color: AppColors.accent,
+                    color: Colors.white,
                   ),
                   onPressed: () {
                     setState(() {

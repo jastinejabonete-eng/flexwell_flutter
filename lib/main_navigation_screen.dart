@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dashboard_screen.dart';
-import 'app_colors.dart';
 import 'tutorials_screen.dart';
 import 'achievements_screen.dart';
 import 'user_manual_screen.dart'; // <--- Import User Manual
 import 'settings_screen.dart';
+import 'onboarding_service.dart';
+import 'onboarding_tour_overlay.dart';
+import 'onboarding_tour_steps.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -15,94 +17,177 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
+  int? _tourStepIndex;
+  bool _savingTour = false;
+  final GlobalKey _tourRootKey = GlobalKey(debugLabel: 'tour-overlay-root');
 
-  final List<Widget> _screens = const [
-    DashboardScreen(),
-    TutorialsScreen(),
-    AchievementsScreen(),
-    UserManualScreen(), // <--- Added Screen
-    SettingsScreen(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showFirstRunTour();
+    });
+  }
 
-  final List<Map<String, dynamic>> _navItems = const [
-    {'icon': Icons.fitness_center_rounded, 'label': 'Dashboard'},
-    {'icon': Icons.school_rounded, 'label': 'Tutorials'},
-    {'icon': Icons.emoji_events_rounded, 'label': 'Badges'},
-    {'icon': Icons.menu_book_rounded, 'label': 'Manual'}, // <--- Added Nav Item
-    {'icon': Icons.settings_rounded, 'label': 'Settings'},
-  ];
+  Future<void> _showFirstRunTour() async {
+    if (await OnboardingService.hasCompletedTour() || !mounted) return;
+    _startTour();
+  }
+
+  void _startTour() {
+    setState(() {
+      _currentIndex = OnboardingTourSteps.all.first.screenIndex;
+      _tourStepIndex = 0;
+    });
+  }
+
+  void _setTourStep(int index) {
+    setState(() {
+      _tourStepIndex = index;
+      _currentIndex = OnboardingTourSteps.all[index].screenIndex;
+    });
+  }
+
+  Future<void> _finishTour() async {
+    if (_savingTour) return;
+    setState(() => _savingTour = true);
+    await OnboardingService.markTourCompleted();
+    if (!mounted) return;
+    setState(() {
+      _tourStepIndex = null;
+      _savingTour = false;
+    });
+  }
+
+  void _selectTab(int index) {
+    setState(() {
+      _currentIndex = index;
+      if (_tourStepIndex != null) {
+        final matchingStep = OnboardingTourSteps.all.indexWhere(
+          (step) => step.screenIndex == index,
+        );
+        if (matchingStep >= 0) _tourStepIndex = matchingStep;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+    final screens = [
+      const DashboardScreen(),
+      const TutorialsScreen(),
+      const AchievementsScreen(),
+      const UserManualScreen(),
+      SettingsScreen(onReplayTour: _startTour),
+    ];
+    final tourIndex = _tourStepIndex;
+    final destinations = [
+      (
+        label: 'Dashboard',
+        icon: Icons.fitness_center_rounded,
+        selectedIcon: Icons.fitness_center,
       ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Container(
-            height: 64,
-            decoration: BoxDecoration(
-              color: AppColors.navBarBackground,
-              borderRadius: BorderRadius.circular(32),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(_navItems.length, (index) {
-                final isSelected = _currentIndex == index;
-                final item = _navItems[index];
+      (
+        label: 'Tutorials',
+        icon: Icons.school_outlined,
+        selectedIcon: Icons.school_rounded,
+      ),
+      (
+        label: 'Badges',
+        icon: Icons.emoji_events_outlined,
+        selectedIcon: Icons.emoji_events_rounded,
+      ),
+      (
+        label: 'Manual',
+        icon: Icons.menu_book_outlined,
+        selectedIcon: Icons.menu_book_rounded,
+      ),
+      (
+        label: 'Settings',
+        icon: Icons.settings_outlined,
+        selectedIcon: Icons.settings_rounded,
+      ),
+    ];
 
-                return GestureDetector(
-                  onTap: () => setState(() => _currentIndex = index),
-                  behavior: HitTestBehavior.opaque,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isSelected ? AppColors.navBarActivePill : Colors.transparent,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          item['icon'] as IconData,
-                          size: 18,
-                          color: isSelected
-                              ? AppColors.accent // Volt green active highlight
-                              : AppColors.navBarInactive,
+    return Stack(
+      key: _tourRootKey,
+      fit: StackFit.expand,
+      children: [
+        Scaffold(
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              final useRail = constraints.maxWidth >= 600;
+              final content = IndexedStack(
+                index: _currentIndex,
+                children: screens,
+              );
+
+              if (!useRail) {
+                // Account for the bottom NavigationBar so GridView contents
+                // don't get cut off behind the last row of cards.
+                final bottomPadding = MediaQuery.paddingOf(context).bottom +
+                    kBottomNavigationBarHeight;
+                return Padding(padding: EdgeInsets.only(bottom: bottomPadding), child: content);
+              }
+
+              return Row(
+                children: [
+                  NavigationRail(
+                    selectedIndex: _currentIndex,
+                    labelType: NavigationRailLabelType.all,
+                    onDestinationSelected: _selectTab,
+                    destinations: [
+                      for (final destination in destinations)
+                        NavigationRailDestination(
+                          icon: Icon(destination.icon),
+                          selectedIcon: Icon(destination.selectedIcon),
+                          label: Text(destination.label),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          item['label'] as String,
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                            color: isSelected
-                                ? AppColors.accent
-                                : AppColors.navBarInactive,
-                          ),
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
-                );
-              }),
+                  const VerticalDivider(width: 1),
+                  Expanded(child: content),
+                ],
+              );
+            },
+          ),
+          bottomNavigationBar: MediaQuery.sizeOf(context).width >= 600
+              ? null
+              : NavigationBar(
+                  selectedIndex: _currentIndex,
+                  onDestinationSelected: _selectTab,
+                  destinations: [
+                    for (final destination in destinations)
+                      NavigationDestination(
+                        icon: Icon(destination.icon),
+                        selectedIcon: Icon(destination.selectedIcon),
+                        label: destination.label,
+                      ),
+                  ],
+                ),
+        ),
+        if (tourIndex != null)
+          Positioned.fill(
+            child: OnboardingTourOverlay(
+              overlayKey: _tourRootKey,
+              step: OnboardingTourSteps.all[tourIndex],
+              stepIndex: tourIndex,
+              totalSteps: OnboardingTourSteps.all.length,
+              isSaving: _savingTour,
+              onPrevious: () {
+                if (tourIndex > 0) _setTourStep(tourIndex - 1);
+              },
+              onNext: () {
+                if (tourIndex == OnboardingTourSteps.all.length - 1) {
+                  _finishTour();
+                } else {
+                  _setTourStep(tourIndex + 1);
+                }
+              },
+              onSkip: _finishTour,
             ),
           ),
-        ),
-      ),
+      ],
     );
   }
 }

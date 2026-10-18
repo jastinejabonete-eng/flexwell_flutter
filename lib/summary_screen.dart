@@ -3,6 +3,7 @@ import 'app_colors.dart';
 import 'camera_screen.dart';
 import 'fade_route.dart';
 import 'main_navigation_screen.dart';
+import 'exercise_camera_setup_dialog.dart';
 
 /// Built-in title/icon for each achievement id, used to celebrate a newly
 /// unlocked badge on the session summary. Kept in sync with the user manual
@@ -91,7 +92,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              ids.length == 1 ? 'Badge Unlocked!' : '${ids.length} Badges Unlocked!',
+              ids.length == 1
+                  ? 'Badge Unlocked!'
+                  : '${ids.length} Badges Unlocked!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: text,
@@ -105,8 +108,11 @@ class _SummaryScreenState extends State<SummaryScreen> {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Row(
                   children: [
-                    Icon(_kAchievementMeta[id]?.$2 ?? Icons.emoji_events_rounded,
-                        color: AppColors.gold, size: 22),
+                    Icon(
+                      _kAchievementMeta[id]?.$2 ?? Icons.emoji_events_rounded,
+                      color: AppColors.gold,
+                      size: 22,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -141,8 +147,10 @@ class _SummaryScreenState extends State<SummaryScreen> {
                 ),
               ),
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Awesome!',
-                  style: TextStyle(fontWeight: FontWeight.w900)),
+              child: const Text(
+                'Awesome!',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
             ),
           ),
         ],
@@ -155,7 +163,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor = isDark ? AppColors.darkCardFilled : Colors.white;
     final primaryTextColor = isDark ? Colors.white : AppColors.lightText;
-    final secondaryTextColor = isDark ? Colors.white54 : AppColors.lightTextSecondary;
+    final secondaryTextColor = isDark
+        ? Colors.white54
+        : AppColors.lightTextSecondary;
 
     // Guard against out-of-range values so the ring and text never break.
     final safeAccuracy = widget.accuracy.clamp(0, 100).toInt();
@@ -174,11 +184,13 @@ class _SummaryScreenState extends State<SummaryScreen> {
     final showPerfectReps = widget.isRepBased && safeReps > 0;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      backgroundColor: isDark
+          ? AppColors.darkBackground
+          : AppColors.lightBackground,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text(
-          'SESSION COMPLETE',
+          'Session complete',
           style: TextStyle(
             color: primaryTextColor,
             fontWeight: FontWeight.w900,
@@ -195,165 +207,121 @@ class _SummaryScreenState extends State<SummaryScreen> {
             // SingleChildScrollView has no `padding` param -- wrap in Padding
             // so the horizontal/vertical insets are actually applied.
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: ConstrainedBox(
-              constraints: BoxConstraints(
-                // Never negative, even on very short screens.
-                minHeight: (constraints.maxHeight - 32).clamp(0.0, double.infinity),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
               ),
-              child: IntrinsicHeight(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Target: ${widget.exercise}',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: secondaryTextColor,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Modern Fitness Accuracy Ring
-                    Center(
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          SizedBox(
-                            width: 180,
-                            height: 180,
-                            child: CircularProgressIndicator(
-                              value: safeAccuracy / 100,
-                              strokeWidth: 16,
-                              backgroundColor: isDark
-                                  ? Colors.white.withValues(alpha: 0.05)
-                                  : Colors.grey.shade200,
-                              color: statusColor,
-                              strokeCap: StrokeCap.round,
-                            ),
-                          ),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '$safeAccuracy%',
-                                style: TextStyle(
-                                  fontSize: 42,
-                                  fontWeight: FontWeight.w900,
-                                  color: primaryTextColor,
-                                ),
-                              ),
-                              Text(
-                                'Accuracy',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: secondaryTextColor,
-                                  letterSpacing: 1.1,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // Glass-style Stats Card
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: cardColor,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : Colors.grey.shade200,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  // Never negative, even on very short screens.
+                  minHeight: (constraints.maxHeight - 32).clamp(
+                    0.0,
+                    double.infinity,
+                  ),
+                ),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Target: ${widget.exercise}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: secondaryTextColor,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
-                            blurRadius: 15,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
                       ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: AppColors.accent.withValues(alpha: 0.15),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  widget.isRepBased ? Icons.repeat_rounded : Icons.timer_rounded,
-                                  color: isDark
-                                      ? AppColors.accent
-                                      : Colors.green.shade800,
-                                  size: 32,
-                                ),
-                              ),
-                              const SizedBox(width: 20),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    widget.isRepBased ? '$safeReps' : '${safeHold}s',
-                                    style: TextStyle(
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.w900,
-                                      color: primaryTextColor,
-                                    ),
-                                  ),
-                                  Text(
-                                    widget.isRepBased
-                                        ? 'Total Reps Completed'
-                                        : 'Longest Perfect Hold',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: secondaryTextColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                      const SizedBox(height: 32),
 
-                          // Perfect-rep breakout: only rendered for rep-based
-                          // exercises. Separated from the primary stat by a
-                          // divider so it reads as a secondary, more granular
-                          // metric rather than competing with the headline number.
-                          if (showPerfectReps) ...[
-                            const SizedBox(height: 20),
-                            Divider(
-                              height: 1,
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.08)
-                                  : Colors.grey.shade200,
+                      // Modern Fitness Accuracy Ring
+                      Center(
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SizedBox(
+                              width: 180,
+                              height: 180,
+                              child: CircularProgressIndicator(
+                                value: safeAccuracy / 100,
+                                strokeWidth: 16,
+                                backgroundColor: isDark
+                                    ? Colors.white.withValues(alpha: 0.05)
+                                    : Colors.grey.shade200,
+                                color: statusColor,
+                                strokeCap: StrokeCap.round,
+                              ),
                             ),
-                            const SizedBox(height: 20),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '$safeAccuracy%',
+                                  style: TextStyle(
+                                    fontSize: 42,
+                                    fontWeight: FontWeight.w900,
+                                    color: primaryTextColor,
+                                  ),
+                                ),
+                                Text(
+                                  'Accuracy',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: secondaryTextColor,
+                                    letterSpacing: 1.1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Glass-style Stats Card
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: cardColor,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : Colors.grey.shade200,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(
+                                alpha: isDark ? 0.25 : 0.05,
+                              ),
+                              blurRadius: 15,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Container(
                                   padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
-                                    color: statusColor.withValues(alpha: 0.15),
+                                    color: AppColors.accent.withValues(
+                                      alpha: 0.15,
+                                    ),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
-                                    Icons.star_rounded,
-                                    color: statusColor,
+                                    widget.isRepBased
+                                        ? Icons.repeat_rounded
+                                        : Icons.timer_rounded,
+                                    color: isDark
+                                        ? AppColors.accent
+                                        : Colors.green.shade800,
                                     size: 32,
                                   ),
                                 ),
@@ -362,7 +330,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '$safePerfect / $safeReps',
+                                      widget.isRepBased
+                                          ? '$safeReps'
+                                          : '${safeHold}s',
                                       style: TextStyle(
                                         fontSize: 32,
                                         fontWeight: FontWeight.w900,
@@ -370,7 +340,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                       ),
                                     ),
                                     Text(
-                                      'Perfect-Form Reps',
+                                      widget.isRepBased
+                                          ? 'Total Reps Completed'
+                                          : 'Longest Perfect Hold',
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
@@ -381,87 +353,158 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                 ),
                               ],
                             ),
+
+                            // Perfect-rep breakout: only rendered for rep-based
+                            // exercises. Separated from the primary stat by a
+                            // divider so it reads as a secondary, more granular
+                            // metric rather than competing with the headline number.
+                            if (showPerfectReps) ...[
+                              const SizedBox(height: 20),
+                              Divider(
+                                height: 1,
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.08)
+                                    : Colors.grey.shade200,
+                              ),
+                              const SizedBox(height: 20),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      color: statusColor.withValues(
+                                        alpha: 0.15,
+                                      ),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.star_rounded,
+                                      color: statusColor,
+                                      size: 32,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 20),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '$safePerfect / $safeReps',
+                                        style: TextStyle(
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.w900,
+                                          color: primaryTextColor,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Perfect-Form Reps',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: secondaryTextColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
-                        ],
-                      ),
-                    ),
-
-                    const Spacer(),
-                    const SizedBox(height: 16),
-
-                    // Primary Action: Try Again (Volt Green)
-                    SizedBox(
-                      height: 56,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.accent, // Volt Green Gym color
-                          foregroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 4,
-                          shadowColor: AppColors.accent.withValues(alpha: 0.4),
-                        ),
-                        icon: const Icon(Icons.refresh_rounded, size: 24),
-                        label: const Text(
-                          'TRY AGAIN',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pushReplacement(
-                          context,
-                          fadeRoute(CameraScreen(exercise: widget.exercise)),
                         ),
                       ),
-                    ),
 
-                    const SizedBox(height: 16),
+                      const Spacer(),
+                      const SizedBox(height: 16),
 
-                    // Secondary Action: Back to Dashboard
-                    SizedBox(
-                      height: 56,
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(
-                            color: isDark ? Colors.white24 : Colors.grey.shade400,
-                            width: 1.5,
+                      // Primary Action: Try Again (Volt Green)
+                      SizedBox(
+                        height: 56,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                AppColors.accent, // Volt Green Gym color
+                            foregroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 4,
+                            shadowColor: AppColors.accent.withValues(
+                              alpha: 0.4,
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                          icon: const Icon(Icons.refresh_rounded, size: 24),
+                          label: const Text(
+                            'TRY AGAIN',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.0,
+                            ),
                           ),
+                          onPressed: () async {
+                            final shouldStart = await showExerciseCameraSetup(
+                              context,
+                              widget.exercise,
+                            );
+                            if (shouldStart && context.mounted) {
+                              await Navigator.pushReplacement(
+                                context,
+                                fadeRoute(
+                                  CameraScreen(exercise: widget.exercise),
+                                ),
+                              );
+                            }
+                          },
                         ),
-                        icon: Icon(
-                          Icons.dashboard_rounded,
-                          size: 20,
-                          color: primaryTextColor,
-                        ),
-                        label: Text(
-                          'BACK TO DASHBOARD',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Secondary Action: Back to Dashboard
+                      SizedBox(
+                        height: 56,
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: isDark
+                                  ? Colors.white24
+                                  : Colors.grey.shade400,
+                              width: 1.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          icon: Icon(
+                            Icons.dashboard_rounded,
+                            size: 20,
                             color: primaryTextColor,
-                            letterSpacing: 0.8,
+                          ),
+                          label: Text(
+                            'BACK TO DASHBOARD',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: primaryTextColor,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          onPressed: () => Navigator.pushAndRemoveUntil(
+                            context,
+                            fadeRoute(const MainNavigationScreen()),
+                            (route) => false,
                           ),
                         ),
-                        onPressed: () => Navigator.pushAndRemoveUntil(
-                          context,
-                          fadeRoute(const MainNavigationScreen()),
-                          (route) => false,
-                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
+                      const SizedBox(height: 12),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
-          ),
       ),
     );
   }

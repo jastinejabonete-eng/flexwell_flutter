@@ -41,6 +41,8 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   // which is what the pose model was trained on. The front camera shows a
   // mirrored selfie preview, which looks inverted to the user.
   bool _isFrontCamera = false;
+  bool get _mirrorFrontCameraPreview =>
+      Platform.isAndroid && _isFrontCamera;
   bool _isBusy = false;
   bool _isStarting = false;
   bool _isSwitching = false;
@@ -114,8 +116,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   List<CameraDescription>? _cachedCameras;
 
   // Adaptive frame skipping. The camera delivers ~30 fps; we analyse every
-  // _processEveryNthFrame-th frame. Start at 3 (~10 fps), which the rep-hold
-  // constants elsewhere (hold grace, dwell frames, verdict hold) assume. If
+  // _processEveryNthFrame-th frame. If
   // ML Kit + KNN consistently overrun the frame budget, the busy gate drops
   // frames anyway, so raise the interval to rebuild the overlay at a rate the
   // device can actually sustain, and lower it again when processing is fast.
@@ -368,19 +369,16 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
         // the first verdict instead of a ~2s wait before the camera appears.
         if (!_knnReady) return;
         final pose = poses.first;
-        final analysis = await _poseAnalyzer.analyze(widget.exercise, pose);
-        if (!mounted || _isEnding) return; // state may have changed during the await
-
         // Start-position gate: if the user clearly isn't in this exercise's
         // required starting position (wrong side, standing when they should be
         // prone, not hanging, etc.), show an orange skeleton with the reason
-        // instead of a misleading green/red form verdict. This runs before any
-        // form judging so it overrides everything while not ready.
+        // instead of a misleading green/red form verdict. Run this before
+        // analysis so an invalid starting pose cannot be used for calibration.
         final notReady = PoseAnalyzer.checkStartPosition(widget.exercise, pose);
         if (notReady != null) {
           final previous = _overlay.value;
           _overlay.value = _OverlayState(
-            pose: analysis.smoothedPose ?? pose,
+            pose: pose,
             imageSize: displaySize,
             isCorrect: previous.isCorrect,
             landmarksOk: true, // keep drawing the skeleton...
@@ -389,6 +387,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
           );
           return; // finally block resets _isBusy and updates the frame skip
         }
+
+        final analysis = await _poseAnalyzer.analyze(widget.exercise, pose);
+        if (!mounted || _isEnding) return; // state may have changed during the await
 
         if (kDebugMode) {
           debugPrint('[perf] mlkit=${mlMs}ms total=${sw.elapsedMilliseconds}ms');
@@ -717,6 +718,10 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
                   child: CameraPreview(controller),
                 ),
               );
+              final alignedPreview = Transform.scale(
+                scaleX: _mirrorFrontCameraPreview ? -1 : 1,
+                child: preview,
+              );
 
               // RepaintBoundary keeps the preview on its own layer so the
               // skeleton repainting never forces the preview to repaint.
@@ -724,7 +729,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
                 child: ClipRect(
                   child: Transform.scale(
                     scale: scale,
-                    child: preview,
+                    child: alignedPreview,
                   ),
                 ),
               );
@@ -745,7 +750,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
                   // Must match the preview's aspect ratio exactly, or the
                   // skeleton is scaled into the wrong box and drifts off-body.
                   previewAspectRatio: controller.value.aspectRatio,
-                  isFrontCamera: _isFrontCamera,
+                  isFrontCamera: _mirrorFrontCameraPreview,
                   hideLowerBody: PosePainter.hidesLowerBody(widget.exercise),
                   requiredLandmarks: PosePainter.requiredFor(widget.exercise),
                 ),
@@ -782,11 +787,13 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
                         children: [
                           _circularButton(
                             icon: Icons.cameraswitch_rounded,
+                            tooltip: 'Switch camera',
                             onPressed: _switchCamera,
                           ),
                           const SizedBox(width: 8),
                           _circularButton(
                             icon: Icons.stop_rounded,
+                            tooltip: 'End workout',
                             color: AppColors.incorrect,
                             onPressed: _endSession,
                           ),
@@ -858,13 +865,20 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     );
   }
 
-  Widget _circularButton({required IconData icon, required VoidCallback onPressed, Color color = AppColors.primary}) {
+  Widget _circularButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onPressed,
+    Color color = AppColors.primary,
+  }) {
     return Material(
       color: color,
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
       elevation: 4,
       child: IconButton(
+        tooltip: tooltip,
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
         icon: Icon(icon, color: Colors.white, size: 20),
         onPressed: onPressed,
       ),

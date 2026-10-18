@@ -1,85 +1,78 @@
 import 'package:flutter/material.dart';
-import 'app_colors.dart';
+
 import 'main.dart';
+import 'onboarding_tour_steps.dart';
 import 'terms_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+  final VoidCallback? onReplayTour;
+
+  const SettingsScreen({super.key, this.onReplayTour});
+
+  Widget _leadingIcon(BuildContext context, IconData icon) {
+    final color = Theme.of(context).colorScheme.primary;
+    return Icon(icon, color: color);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('SETTINGS'),
-      ),
+      appBar: AppBar(title: const Text('Settings')),
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
         children: [
-          // Theme Toggle Section
-          Material(
-            color: Theme.of(context).cardColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-              side: BorderSide(
-                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-              ),
-            ),
-            child: SwitchListTile(
-              secondary: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                  color: AppColors.primaryLight,
-                ),
-              ),
-              title: const Text('Dark Mode Theme', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-              subtitle: const Text('Switch between Light and Gym Dark Theme'),
-              value: isDark,
-              onChanged: (bool val) {
-                // The app-level MaterialApp animates the swap
-                // (themeAnimationDuration in main.dart), so the heavy
-                // dark-mode shadows rebuild across a short cross-fade instead
-                // of in one janky frame.
-                themeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
-              },
+          Text(
+            'Personalize your training experience.',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 14),
-
-         
-          const SizedBox(height: 14),
-
-          // Terms and Conditions
-          Material(
-            color: Theme.of(context).cardColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-              side: BorderSide(
-                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-              ),
-            ),
-            child: ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+          const SizedBox(height: 20),
+          Card(
+            key: OnboardingTourAnchors.settings,
+            child: Column(
+              children: [
+                SwitchListTile(
+                  secondary: _leadingIcon(
+                    context,
+                    theme.brightness == Brightness.dark
+                        ? Icons.dark_mode_rounded
+                        : Icons.light_mode_rounded,
+                  ),
+                  title: const Text('Dark mode'),
+                  subtitle: const Text('Choose a comfortable appearance'),
+                  value: theme.brightness == Brightness.dark,
+                  onChanged: (value) {
+                    themeNotifier.value = value
+                        ? ThemeMode.dark
+                        : ThemeMode.light;
+                  },
                 ),
-                child: const Icon(Icons.description_rounded, color: AppColors.primaryLight),
-              ),
-              title: const Text('Terms & Conditions', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-              subtitle: const Text('Read how FlexWell uses your data'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const TermsScreen()),
-              ),
+                const Divider(height: 1, indent: 56),
+                ListTile(
+                  key: const ValueKey('settings_replay_tour'),
+                  leading: _leadingIcon(context, Icons.explore_rounded),
+                  title: const Text('Replay app tour'),
+                  subtitle: const Text('Review camera setup and app features'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: onReplayTour,
+                ),
+                const Divider(height: 1, indent: 56),
+                ListTile(
+                  leading: _leadingIcon(context, Icons.description_outlined),
+                  title: const Text('Terms & Conditions'),
+                  subtitle: const Text(
+                    'Review FlexWell’s data and usage terms',
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TermsScreen()),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

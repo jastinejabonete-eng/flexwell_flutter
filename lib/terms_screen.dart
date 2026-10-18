@@ -228,31 +228,19 @@ class _TermsScreenState extends State<TermsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryText = isDark ? Colors.white : Colors.black87;
-    final secondaryText = isDark ? Colors.white70 : Colors.grey.shade700;
-    final cardColor = isDark ? AppColors.darkCardFilled : Colors.white;
-    final borderColor = isDark
-        ? Colors.white.withValues(alpha: 0.08)
-        : Colors.grey.shade300;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final primaryText = scheme.onSurface;
+    final secondaryText = scheme.onSurfaceVariant;
+    final cardColor = scheme.surface;
+    final borderColor = scheme.outlineVariant;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.darkBackground : const Color(0xFFF1F5F9),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: !widget.requireAcceptance,
-        title: Text(
-          'TERMS & CONDITIONS',
-          style: TextStyle(
-            color: primaryText,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.2,
-            fontSize: 20,
-          ),
-        ),
+        title: const Text('Terms & Conditions'),
         iconTheme: IconThemeData(color: primaryText),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
       ),
       body: SafeArea(
         child: Column(
@@ -285,10 +273,8 @@ class _TermsScreenState extends State<TermsScreen> {
                           Text(
                             section.title,
                             style: TextStyle(
-                              color: isDark
-                                  ? AppColors.accent
-                                  : AppColors.primary,
-                              fontSize: 14,
+                              color: scheme.primary,
+                              fontSize: 16,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -312,7 +298,7 @@ class _TermsScreenState extends State<TermsScreen> {
                                 ),
                                 style: TextStyle(
                                   color: secondaryText,
-                                  fontSize: 13,
+                                  fontSize: 14,
                                   height: 1.45,
                                 ),
                               ),
@@ -358,8 +344,7 @@ class _TermsScreenState extends State<TermsScreen> {
                                 horizontal: 16, vertical: 12),
                             backgroundColor: AppColors.accent,
                             foregroundColor: Colors.black,
-                            disabledBackgroundColor:
-                                isDark ? Colors.white12 : Colors.grey.shade300,
+                            disabledBackgroundColor: scheme.surfaceContainerHighest,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
@@ -397,8 +382,7 @@ class _TermsScreenState extends State<TermsScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 10),
                             side: BorderSide(
-                              color:
-                                  isDark ? Colors.white24 : Colors.grey.shade400,
+                              color: scheme.outline,
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),

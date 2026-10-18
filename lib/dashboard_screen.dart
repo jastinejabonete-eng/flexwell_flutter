@@ -6,6 +6,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'app_colors.dart';
 import 'camera_screen.dart';
 import 'fade_route.dart';
+import 'exercise_camera_setup_dialog.dart';
+import 'onboarding_tour_steps.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -26,7 +28,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Search and Filter State
   String _searchQuery = '';
   String _selectedFilter = 'All';
-  final List<String> _filters = ['All', 'Dynamic', 'Static', 'Upper Body', 'Lower Body', 'Core'];
+  final List<String> _filters = [
+    'All',
+    'Dynamic',
+    'Static',
+    'Upper Body',
+    'Lower Body',
+    'Core',
+  ];
 
   // Exercise Data Catalog (6 Exercises with SVG paths)
   final List<Map<String, dynamic>> _allExercises = [
@@ -93,10 +102,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _sessionsStream = uid == null
         ? null
         : FirebaseFirestore.instance
-            .collection('users')
-            .doc(uid)
-            .collection('sessions')
-            .snapshots();
+              .collection('users')
+              .doc(uid)
+              .collection('sessions')
+              .snapshots();
     _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
       setState(() {
         _now = DateTime.now();
@@ -111,7 +120,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   String _formatDateTime(DateTime dt) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     String dayName = days[dt.weekday - 1];
     String monthName = months[dt.month - 1];
@@ -125,11 +147,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   List<Map<String, dynamic>> get _filteredExercises {
     return _allExercises.where((ex) {
-      final matchesSearch = ex['title'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                            ex['subtitle'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesFilter = _selectedFilter == 'All' || 
-                            ex['filter'] == _selectedFilter || 
-                            ex['tag2'] == _selectedFilter;
+      final matchesSearch =
+          ex['title'].toString().toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          ) ||
+          ex['subtitle'].toString().toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          );
+      final matchesFilter =
+          _selectedFilter == 'All' ||
+          ex['filter'] == _selectedFilter ||
+          ex['tag2'] == _selectedFilter;
       return matchesSearch && matchesFilter;
     }).toList();
   }
@@ -140,7 +168,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final primaryTextColor = isDark ? Colors.white : AppColors.lightText;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      backgroundColor: isDark
+          ? AppColors.darkBackground
+          : AppColors.lightBackground,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -179,43 +209,73 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   // --- STREAK CARD (streak, best, this week, next milestone) ---
                   _buildStreakSection(isDark),
-                  
+
                   const SizedBox(height: 32),
 
                   // --- HEADER ---
                   Text(
-                    'Choose Your Exercise',
-                    style: TextStyle(color: primaryTextColor, fontSize: 22, fontWeight: FontWeight.w900),
+                    'Choose an exercise',
+                    key: OnboardingTourAnchors.dashboardExercises,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: primaryTextColor,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     '6 exercises with real-time posture detection',
-                    style: TextStyle(color: isDark ? Colors.white54 : AppColors.lightTextSecondary, fontSize: 14),
+                    style: TextStyle(
+                      color: isDark
+                          ? Colors.white54
+                          : AppColors.lightTextSecondary,
+                      fontSize: 14,
+                    ),
                   ),
                   const SizedBox(height: 20),
 
                   // --- SEARCH BAR ---
                   TextField(
+                    key: OnboardingTourAnchors.dashboardSearch,
                     onChanged: (val) => setState(() => _searchQuery = val),
                     style: TextStyle(color: primaryTextColor),
                     decoration: InputDecoration(
                       hintText: 'Search exercises, muscle groups...',
-                      hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
-                      prefixIcon: Icon(Icons.search, color: isDark ? Colors.white54 : AppColors.lightTextSecondary),
+                      hintStyle: TextStyle(
+                        color: isDark ? Colors.white38 : Colors.black38,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: isDark
+                            ? Colors.white54
+                            : AppColors.lightTextSecondary,
+                      ),
                       filled: true,
-                      fillColor: isDark ? AppColors.darkCardFilled : Colors.white,
+                      fillColor: isDark
+                          ? AppColors.darkCardFilled
+                          : Colors.white,
                       contentPadding: const EdgeInsets.symmetric(vertical: 0),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.lightBorder),
+                        borderSide: BorderSide(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : AppColors.lightBorder,
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.lightBorder),
+                        borderSide: BorderSide(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : AppColors.lightBorder,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: isDark ? AppColors.accent : AppColors.primary, width: 1.5),
+                        borderSide: BorderSide(
+                          color: isDark ? AppColors.accent : AppColors.primary,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
@@ -232,17 +292,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           child: ChoiceChip(
                             label: Text(filter),
                             selected: isSelected,
+                            materialTapTargetSize: MaterialTapTargetSize.padded,
                             onSelected: (selected) {
-                              if (selected) setState(() => _selectedFilter = filter);
+                              if (selected) {
+                                setState(() => _selectedFilter = filter);
+                              }
                             },
                             labelStyle: TextStyle(
-                              color: isSelected ? Colors.black : (isDark ? Colors.white : AppColors.lightText),
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              color: isSelected
+                                  ? Colors.black
+                                  : (isDark
+                                        ? Colors.white
+                                        : AppColors.lightText),
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
-                            backgroundColor: isDark ? AppColors.darkCardFilled : Colors.white,
+                            backgroundColor: isDark
+                                ? AppColors.darkCardFilled
+                                : Colors.white,
                             selectedColor: AppColors.accent,
-                            side: BorderSide(color: isSelected ? AppColors.accent : (isDark ? Colors.white12 : AppColors.lightBorder)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? AppColors.accent
+                                  : (isDark
+                                        ? Colors.white12
+                                        : AppColors.lightBorder),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
                           ),
                         );
                       }).toList(),
@@ -255,58 +334,124 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
 
           // --- EXERCISE GRID ---
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 0.75,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  return _buildGridCard(context, _filteredExercises[index], isDark);
-                },
-                childCount: _filteredExercises.length,
-              ),
-            ),
+          SliverLayoutBuilder(
+            builder: (context, constraints) {
+              if (_filteredExercises.isEmpty) {
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 32, 24, 48),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.search_off_rounded,
+                          size: 40,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No exercises found',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Try another search or clear your filters.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _searchQuery = '';
+                              _selectedFilter = 'All';
+                            });
+                          },
+                          child: const Text('Clear filters'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              final width = constraints.crossAxisExtent;
+              final textScale = MediaQuery.textScalerOf(context).scale(1);
+              final columns = width < 360
+                  ? 1
+                  : width < 760
+                  ? 2
+                  : width < 1050
+                  ? 3
+                  : 4;
+              final aspectRatio = columns == 1
+                  ? (1.45 / textScale).clamp(0.55, 1.45)
+                  : columns == 2
+                  ? (1.0 / textScale).clamp(0.45, 1.0)
+                  : (1.1 / textScale).clamp(0.42, 1.1);
+
+              return SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: aspectRatio,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => _buildGridCard(
+                      context,
+                      _filteredExercises[index],
+                      isDark,
+                    ),
+                    childCount: _filteredExercises.length,
+                  ),
+                ),
+              );
+            },
           ),
-          
-          // Extra padding at the bottom so the grid scrolls completely above the floating nav bar
-          const SliverToBoxAdapter(child: SizedBox(height: 100)), 
+
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
         ],
       ),
     );
   }
 
-  Widget _buildGridCard(BuildContext context, Map<String, dynamic> data, bool isDark) {
+  Widget _buildGridCard(
+    BuildContext context,
+    Map<String, dynamic> data,
+    bool isDark,
+  ) {
     Color accentColor = data['accent'];
-    
+
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCardFilled : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.lightBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            Navigator.push(context, fadeRoute(CameraScreen(exercise: data['title'])));
+          onTap: () async {
+            final exercise = data['title'] as String;
+            if (await showExerciseCameraSetup(context, exercise) &&
+                context.mounted) {
+              await Navigator.push(
+                context,
+                fadeRoute(CameraScreen(exercise: exercise)),
+              );
+            }
           },
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border(left: BorderSide(color: accentColor, width: 4)),
-            ),
+          child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -325,59 +470,76 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     colorFilter: ColorFilter.mode(accentColor, BlendMode.srcIn),
                   ),
                 ),
-                const Spacer(),
-                
+                const SizedBox(height: 14),
+
                 Text(
                   data['title'],
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : AppColors.lightText,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   data['subtitle'],
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? Colors.white54 : AppColors.lightTextSecondary,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: isDark
+                        ? Colors.white70
+                        : AppColors.lightTextSecondary,
                   ),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 12),
-                
+                const SizedBox(height: 10),
+
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.accent.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         data['tag1'],
-                        style: TextStyle(color: AppColors.voltFor(isDark), fontSize: 10, fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: AppColors.voltFor(isDark),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.blueAccent.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           data['tag2'],
-                          style: TextStyle(color: isDark ? Colors.blue[300] : Colors.blue[700], fontSize: 10, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: isDark ? Colors.blue[300] : Colors.blue[700],
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),
                   ],
-                )
+                ),
               ],
             ),
           ),
@@ -438,7 +600,8 @@ class _StreakStats {
   /// The streak is still alive but nothing has been logged yet today.
   bool get atRisk => current > 0 && !doneToday;
 
-  bool hasWorkedOn(DateTime d) => days.contains(DateTime.utc(d.year, d.month, d.day));
+  bool hasWorkedOn(DateTime d) =>
+      days.contains(DateTime.utc(d.year, d.month, d.day));
 
   factory _StreakStats.fromDayKeys(Iterable<String> keys, DateTime now) {
     DateTime? parse(String key) {
@@ -471,12 +634,19 @@ class _StreakStats {
     var run = 0;
     DateTime? previous;
     for (final d in sorted) {
-      run = (previous != null && d.difference(previous).inDays == 1) ? run + 1 : 1;
+      run = (previous != null && d.difference(previous).inDays == 1)
+          ? run + 1
+          : 1;
       if (run > best) best = run;
       previous = d;
     }
 
-    return _StreakStats(current: current, best: best, doneToday: doneToday, days: days);
+    return _StreakStats(
+      current: current,
+      best: best,
+      doneToday: doneToday,
+      days: days,
+    );
   }
 }
 
@@ -485,7 +655,11 @@ class _StreakCard extends StatelessWidget {
   final DateTime now;
   final bool isDark;
 
-  const _StreakCard({required this.stats, required this.now, required this.isDark});
+  const _StreakCard({
+    required this.stats,
+    required this.now,
+    required this.isDark,
+  });
 
   static const List<int> _milestones = [3, 7, 14, 30, 60, 100];
   static const List<String> _dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -497,7 +671,9 @@ class _StreakCard extends StatelessWidget {
     final textColor = isDark ? Colors.white : AppColors.lightText;
     final subColor = isDark ? Colors.white60 : AppColors.lightTextSecondary;
     final accentText = isDark ? _volt : AppColors.primary;
-    final borderColor = isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.lightBorder;
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : AppColors.lightBorder;
 
     final Color flameColor;
     if (!active) {
@@ -514,9 +690,11 @@ class _StreakCard extends StatelessWidget {
           ? 'Finish a workout today to light your first streak.'
           : 'Your streak reset. Finish a workout today to start a new one.';
     } else if (stats.doneToday) {
-      message = 'Done for today. Come back tomorrow to make it ${stats.current + 1}.';
+      message =
+          'Done for today. Come back tomorrow to make it ${stats.current + 1}.';
     } else {
-      message = 'Work out today to keep your ${stats.current}-day streak alive.';
+      message =
+          'Work out today to keep your ${stats.current}-day streak alive.';
     }
 
     // Progress toward the next milestone, measured from the previous one.
@@ -529,7 +707,9 @@ class _StreakCard extends StatelessWidget {
       }
       previous = m;
     }
-    final progress = next == null ? 1.0 : (stats.current - previous) / (next - previous);
+    final progress = next == null
+        ? 1.0
+        : (stats.current - previous) / (next - previous);
     final daysToGo = next == null ? 0 : next - stats.current;
 
     return Container(
@@ -541,8 +721,8 @@ class _StreakCard extends StatelessWidget {
           color: !active
               ? borderColor
               : (stats.atRisk
-                  ? Colors.orangeAccent.withValues(alpha: 0.6)
-                  : accentText.withValues(alpha: 0.4)),
+                    ? Colors.orangeAccent.withValues(alpha: 0.6)
+                    : accentText.withValues(alpha: 0.4)),
           width: active ? 1.5 : 1,
         ),
       ),
@@ -559,7 +739,11 @@ class _StreakCard extends StatelessWidget {
                   color: flameColor.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.local_fire_department_rounded, color: flameColor, size: 30),
+                child: Icon(
+                  Icons.local_fire_department_rounded,
+                  color: flameColor,
+                  size: 30,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -587,7 +771,11 @@ class _StreakCard extends StatelessWidget {
                         const SizedBox(width: 6),
                         Text(
                           'day streak',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: subColor),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: subColor,
+                          ),
                         ),
                       ],
                     ),
@@ -600,7 +788,9 @@ class _StreakCard extends StatelessWidget {
                         fontSize: 12.5,
                         height: 1.35,
                         color: stats.atRisk ? Colors.orangeAccent : subColor,
-                        fontWeight: stats.atRisk ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight: stats.atRisk
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                       ),
                     ),
                   ],
@@ -609,7 +799,10 @@ class _StreakCard extends StatelessWidget {
               if (stats.best > 0) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: accentText.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
@@ -617,11 +810,19 @@ class _StreakCard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.emoji_events_rounded, size: 14, color: accentText),
+                      Icon(
+                        Icons.emoji_events_rounded,
+                        size: 14,
+                        color: accentText,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Best ${stats.best}',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: accentText),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: accentText,
+                        ),
                       ),
                     ],
                   ),
@@ -645,7 +846,11 @@ class _StreakCard extends StatelessWidget {
                   next == null
                       ? 'Top milestone reached: ${_milestones.last} days'
                       : 'Next milestone: $next-day streak',
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: textColor),
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                  ),
                 ),
               ),
               if (next != null)
@@ -665,8 +870,12 @@ class _StreakCard extends StatelessWidget {
               builder: (context, value, child) => LinearProgressIndicator(
                 value: value,
                 minHeight: 8,
-                backgroundColor: isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.lightBorder,
-                valueColor: AlwaysStoppedAnimation<Color>(isDark ? _volt : AppColors.accentDark),
+                backgroundColor: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : AppColors.lightBorder,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isDark ? _volt : AppColors.accentDark,
+                ),
               ),
             ),
           ),
@@ -675,15 +884,28 @@ class _StreakCard extends StatelessWidget {
     );
   }
 
-  Widget _buildWeek(Color textColor, Color subColor, Color accentText, Color borderColor) {
+  Widget _buildWeek(
+    Color textColor,
+    Color subColor,
+    Color accentText,
+    Color borderColor,
+  ) {
     final today = DateTime(now.year, now.month, now.day);
     // Weeks start on Sunday (weekday 7 % 7 == 0).
-    final startOfWeek = DateTime(today.year, today.month, today.day - (today.weekday % 7));
+    final startOfWeek = DateTime(
+      today.year,
+      today.month,
+      today.day - (today.weekday % 7),
+    );
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: List.generate(7, (index) {
-        final day = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day + index);
+        final day = DateTime(
+          startOfWeek.year,
+          startOfWeek.month,
+          startOfWeek.day + index,
+        );
         final isToday = day == today;
         final isFuture = day.isAfter(today);
         final worked = stats.hasWorkedOn(day);
@@ -712,12 +934,18 @@ class _StreakCard extends StatelessWidget {
               ),
               child: Center(
                 child: worked
-                    ? const Icon(Icons.check_rounded, color: Colors.black, size: 20)
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: Colors.black,
+                        size: 20,
+                      )
                     : Text(
                         '${day.day}',
                         style: TextStyle(
                           fontSize: 14,
-                          fontWeight: isToday ? FontWeight.w900 : FontWeight.w600,
+                          fontWeight: isToday
+                              ? FontWeight.w900
+                              : FontWeight.w600,
                           color: isFuture
                               ? (isDark ? Colors.white24 : Colors.black26)
                               : (isToday ? accentText : subColor),

@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'achievement_service.dart';
 import 'app_colors.dart';
+import 'onboarding_tour_steps.dart';
 
 /// Key for the off-screen share card that gets captured to a PNG.
 final GlobalKey _shareCardKey = GlobalKey();
@@ -69,10 +70,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     _unlockedStream = user == null
         ? null
         : FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('unlocked_achievements')
-            .snapshots();
+              .collection('users')
+              .doc(user.uid)
+              .collection('unlocked_achievements')
+              .snapshots();
     _unlockedSub = _unlockedStream?.listen(_onUnlockedSnapshot);
   }
 
@@ -91,7 +92,9 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       if (doc.data()['unlocked'] == true) nowUnlocked.add(doc.id);
     }
     // First emission: seed the known set, celebrate nothing.
-    if (_knownUnlocked.isEmpty && _pendingCelebrations.isEmpty && !_seededUnlocked) {
+    if (_knownUnlocked.isEmpty &&
+        _pendingCelebrations.isEmpty &&
+        !_seededUnlocked) {
       _knownUnlocked.addAll(nowUnlocked);
       _seededUnlocked = true;
       return;
@@ -112,8 +115,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     if (_celebrating || _pendingCelebrations.isEmpty || !mounted) return;
     final id = _pendingCelebrations.removeFirst();
     final title = _catalogCache
-            .firstWhere((a) => a.id == id, orElse: () => _Achievement(id, id, '', Icons.star_rounded, 0))
-            .title;
+        .firstWhere(
+          (a) => a.id == id,
+          orElse: () => _Achievement(id, id, '', Icons.star_rounded, 0),
+        )
+        .title;
     _celebrating = true;
     _showUnlockCelebration(title).then((_) {
       _celebrating = false;
@@ -129,14 +135,22 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   /// Translates the string iconName from Firestore into a Flutter IconData object.
   IconData _getIcon(String name) {
     switch (name) {
-      case 'handshake_rounded': return Icons.handshake_rounded;
-      case 'share_rounded': return Icons.ios_share_rounded;
-      case 'workspace_premium_rounded': return Icons.workspace_premium_rounded;
-      case 'fitness_center_rounded': return Icons.fitness_center_rounded;
-      case 'shield_rounded': return Icons.shield_rounded;
-      case 'verified_rounded': return Icons.verified_rounded;
-      case 'bolt_rounded': return Icons.bolt_rounded;
-      default: return Icons.star_rounded; // Fallback icon
+      case 'handshake_rounded':
+        return Icons.handshake_rounded;
+      case 'share_rounded':
+        return Icons.ios_share_rounded;
+      case 'workspace_premium_rounded':
+        return Icons.workspace_premium_rounded;
+      case 'fitness_center_rounded':
+        return Icons.fitness_center_rounded;
+      case 'shield_rounded':
+        return Icons.shield_rounded;
+      case 'verified_rounded':
+        return Icons.verified_rounded;
+      case 'bolt_rounded':
+        return Icons.bolt_rounded;
+      default:
+        return Icons.star_rounded; // Fallback icon
     }
   }
 
@@ -157,7 +171,9 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
   /// id -> unlock time. A key that is present means "unlocked".
   /// A null value means the server timestamp hasn't resolved yet.
-  Map<String, DateTime?> _parseUnlocked(QuerySnapshot<Map<String, dynamic>>? snap) {
+  Map<String, DateTime?> _parseUnlocked(
+    QuerySnapshot<Map<String, dynamic>>? snap,
+  ) {
     final result = <String, DateTime?>{};
     if (snap == null) return result;
     for (final doc in snap.docs) {
@@ -213,8 +229,9 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
       // 2. Write to a temp file (share_plus shares files, not raw bytes).
       final dir = await getTemporaryDirectory();
-      final fileName =
-          badge == null ? 'flexwell_achievements.png' : 'flexwell_${badge.id}.png';
+      final fileName = badge == null
+          ? 'flexwell_achievements.png'
+          : 'flexwell_${badge.id}.png';
       final file = File('${dir.path}/$fileName');
       await file.writeAsBytes(pngBytes);
 
@@ -222,10 +239,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       final caption = badge == null
           ? 'My FlexWell achievements! 💪'
           : 'I just earned the "${badge.title}" achievement on FlexWell! 💪';
-      final result = await Share.shareXFiles(
-        [XFile(file.path)],
-        text: caption,
-      );
+      final result = await Share.shareXFiles([XFile(file.path)], text: caption);
       if (result.status == ShareResultStatus.success) {
         // The celebration popup is driven by the _unlockedStream listener
         // (_onUnlockedSnapshot) the moment the new badge doc lands -- so we
@@ -246,7 +260,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   /// The off-screen card that gets captured to a shareable PNG. Shows the
   /// unlocked count, the app brand, and up to six earned badges. Kept in the
   /// widget tree (inside a RepaintBoundary) so it can always be captured.
-  Widget _buildShareCard(List<_Achievement> catalog, Map<String, DateTime?> unlocked) {
+  Widget _buildShareCard(
+    List<_Achievement> catalog,
+    Map<String, DateTime?> unlocked,
+  ) {
     final earned = catalog.where((a) => unlocked.containsKey(a.id)).toList();
     final shown = earned.take(6).toList();
     return RepaintBoundary(
@@ -264,7 +281,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.fitness_center_rounded, color: AppColors.accent, size: 28),
+                Icon(
+                  Icons.fitness_center_rounded,
+                  color: AppColors.accent,
+                  size: 28,
+                ),
                 const SizedBox(width: 10),
                 Text(
                   'FLEXWELL',
@@ -281,7 +302,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             const SizedBox(height: 8),
             Text(
               'My Achievements',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -299,33 +324,44 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 spacing: 14,
                 runSpacing: 14,
                 children: shown
-                    .map((a) => Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _buildShieldBadge(icon: a.icon, unlocked: true, size: 44, iconSize: 20),
-                            const SizedBox(height: 6),
-                            SizedBox(
-                              width: 70,
-                              child: Text(
-                                a.title,
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                    .map(
+                      (a) => Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildShieldBadge(
+                            icon: a.icon,
+                            unlocked: true,
+                            size: 44,
+                            iconSize: 20,
+                          ),
+                          const SizedBox(height: 6),
+                          SizedBox(
+                            width: 70,
+                            child: Text(
+                              a.title,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                          ],
-                        ))
+                          ),
+                        ],
+                      ),
+                    )
                     .toList(),
               ),
             const SizedBox(height: 20),
             Text(
               'Train smart. Train safe.',
-              style: TextStyle(color: AppColors.accent, fontSize: 12, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: AppColors.accent,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -338,13 +374,13 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   /// Returns a Future that completes when the dialog is dismissed, so callers
   /// can queue the next celebration.
   Future<void> _showUnlockCelebration(String badgeTitle) async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final text = theme.colorScheme.onSurface;
+    final subtext = theme.colorScheme.onSurfaceVariant;
     await showDialog(
       context: context,
       barrierDismissible: true,
       builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? AppColors.darkCardFilled : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         contentPadding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -355,15 +391,18 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 color: AppColors.gold,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.emoji_events_rounded,
-                  color: Colors.black, size: 40),
+              child: const Icon(
+                Icons.emoji_events_rounded,
+                color: Colors.black,
+                size: 40,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
               'Badge Unlocked!',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: isDark ? Colors.white : AppColors.lightText,
+                color: text,
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
               ),
@@ -382,10 +421,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             Text(
               'Check the Badges tab to see it.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
-                fontSize: 12.5,
-              ),
+              style: TextStyle(color: subtext, fontSize: 12.5),
             ),
           ],
         ),
@@ -401,8 +437,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 ),
               ),
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Awesome!',
-                  style: TextStyle(fontWeight: FontWeight.w900)),
+              child: const Text(
+                'Awesome!',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
             ),
           ),
         ],
@@ -428,7 +466,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.fitness_center_rounded, color: AppColors.accent, size: 24),
+                Icon(
+                  Icons.fitness_center_rounded,
+                  color: AppColors.accent,
+                  size: 24,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'FLEXWELL',
@@ -443,7 +485,12 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               ],
             ),
             const SizedBox(height: 28),
-            _buildShieldBadge(icon: badge.icon, unlocked: true, size: 96, iconSize: 48),
+            _buildShieldBadge(
+              icon: badge.icon,
+              unlocked: true,
+              size: 96,
+              iconSize: 48,
+            ),
             const SizedBox(height: 20),
             Text(
               badge.title,
@@ -458,12 +505,20 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             Text(
               badge.subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+                height: 1.4,
+              ),
             ),
             const SizedBox(height: 24),
             Text(
               'Achievement unlocked on FlexWell',
-              style: TextStyle(color: AppColors.accent, fontSize: 12, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: AppColors.accent,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -477,14 +532,15 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     bool unlocked,
     DateTime? unlockedAt,
   ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
 
     showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.75),
       builder: (dialogContext) {
-        final cardBg = isDark ? AppColors.darkCardFilled : Colors.white;
-        final subtextColor = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+        final cardBg = scheme.surface;
+        final subtextColor = scheme.onSurfaceVariant;
 
         return Dialog(
           backgroundColor: Colors.transparent,
@@ -507,20 +563,30 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               children: [
                 Align(
                   alignment: Alignment.topRight,
-                  child: GestureDetector(
-                    onTap: () => Navigator.of(dialogContext).pop(),
-                    child: Icon(Icons.close_rounded, color: subtextColor, size: 24),
+                  child: IconButton(
+                    tooltip: 'Close badge details',
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    icon: Icon(Icons.close_rounded, color: subtextColor),
                   ),
                 ),
                 const SizedBox(height: 8),
-                _buildShieldBadge(icon: item.icon, unlocked: unlocked, size: 90, iconSize: 44),
+                _buildShieldBadge(
+                  icon: item.icon,
+                  unlocked: unlocked,
+                  size: 90,
+                  iconSize: 44,
+                ),
                 const SizedBox(height: 24),
                 Text(
                   item.title,
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: unlocked ? AppColors.gold : Colors.grey.shade400,
+                    color: unlocked ? AppColors.gold : scheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -532,7 +598,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 const SizedBox(height: 6),
                 Text(
                   unlocked ? _formatDate(unlockedAt) : 'Locked',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 28),
                 SizedBox(
@@ -542,9 +611,13 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: unlocked
                           ? AppColors.gold
-                          : (isDark ? Colors.grey.shade800 : Colors.grey.shade300),
-                      foregroundColor: unlocked ? Colors.black : Colors.grey.shade600,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          : scheme.surfaceContainerHighest,
+                      foregroundColor: unlocked
+                          ? Colors.black
+                          : scheme.onSurfaceVariant,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                       elevation: unlocked ? 4 : 0,
                     ),
                     // The Share badge is UNLOCKED BY sharing, so its button is
@@ -560,8 +633,13 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     child: Text(
                       unlocked
                           ? 'Share'
-                          : (_isShareBadge(item) ? 'Share to unlock' : 'Locked'),
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          : (_isShareBadge(item)
+                                ? 'Share to unlock'
+                                : 'Locked'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -589,7 +667,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         width: size,
         height: size * 1.15,
         child: Center(
-          child: Icon(icon, size: iconSize, color: unlocked ? goldColor : slateColor),
+          child: Icon(
+            icon,
+            size: iconSize,
+            color: unlocked ? goldColor : slateColor,
+          ),
         ),
       ),
     );
@@ -609,9 +691,15 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
           stream: _unlockedStream,
           builder: (context, unlockedSnapshot) {
             final unlocked = _parseUnlocked(unlockedSnapshot.data);
-            final hasError = catalogSnapshot.hasError || unlockedSnapshot.hasError;
-            
-            return _buildContent(context, catalog, unlocked, hasError: hasError);
+            final hasError =
+                catalogSnapshot.hasError || unlockedSnapshot.hasError;
+
+            return _buildContent(
+              context,
+              catalog,
+              unlocked,
+              hasError: hasError,
+            );
           },
         );
       },
@@ -619,15 +707,17 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   }
 
   Widget _buildContent(
-    BuildContext context, 
-    List<_Achievement> catalog, 
-    Map<String, DateTime?> unlocked, 
-    {required bool hasError}
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? AppColors.darkCardFilled : Colors.white;
-    final primaryTextColor = isDark ? Colors.white : AppColors.lightText;
-    final secondaryTextColor = isDark ? Colors.white54 : AppColors.lightTextSecondary;
+    BuildContext context,
+    List<_Achievement> catalog,
+    Map<String, DateTime?> unlocked, {
+    required bool hasError,
+  }) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor = theme.cardColor;
+    final primaryTextColor = scheme.onSurface;
+    final secondaryTextColor = scheme.onSurfaceVariant;
 
     // Sort latest unlocked achievements based on the dynamically loaded catalog
     final latest = catalog.where((a) => unlocked.containsKey(a.id)).toList()
@@ -639,15 +729,13 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     final latestThree = latest.take(3).toList();
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          'Achievements',
-          style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.bold, fontSize: 22),
-        ),
+        title: const Text('Achievements'),
         actions: [
           IconButton(
-            icon: Icon(Icons.ios_share_rounded, color: primaryTextColor),
+            tooltip: 'Share achievements',
+            icon: Icon(Icons.share_rounded, color: primaryTextColor),
             onPressed: () => _share(context),
           ),
         ],
@@ -661,49 +749,152 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             // compiles but is silently dropped, so the nav bar overlapped the
             // last badge row. Wrap the content in Padding instead.
             child: Padding(
-              padding:
-                  const EdgeInsets.only(left: 20, right: 20, top: 12, bottom: 90),
-              child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-            if (hasError)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
-                  'Couldn\'t load your achievements. Check your connection.',
-                  style: TextStyle(fontSize: 12, color: AppColors.incorrect),
-                ),
-              ),
-            Row(
-              children: [
-                Text(
-                  '${unlocked.length} / ${catalog.length} unlocked',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryTextColor),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.lightBorder,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+              padding: const EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 12,
+                bottom: 90,
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (hasError)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        'Couldn\'t load your achievements. Check your connection.',
+                        style: TextStyle(fontSize: 14, color: scheme.error),
+                      ),
+                    ),
+                  Row(
+                    children: [
+                      Text(
+                        '${unlocked.length} / ${catalog.length} unlocked',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: primaryTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 24,
+                      horizontal: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cardColor,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : AppColors.lightBorder,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(
+                            alpha: isDark ? 0.2 : 0.05,
+                          ),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'LATEST ACHIEVEMENTS',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                            color: secondaryTextColor,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        if (catalog.isEmpty)
+                          Text(
+                            'Loading achievements catalog...',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: secondaryTextColor,
+                            ),
+                          )
+                        else if (latestThree.isEmpty)
+                          Text(
+                            'Complete a scan to unlock your first badge.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: secondaryTextColor,
+                            ),
+                          )
+                        else
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 20,
+                            runSpacing: 16,
+                            children: latestThree.map((item) {
+                              return Semantics(
+                                button: true,
+                                label: '${item.title}, unlocked',
+                                onTap: () => _showAchievementDetails(
+                                  context,
+                                  item,
+                                  true,
+                                  unlocked[item.id],
+                                ),
+                                child: ExcludeSemantics(
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(12),
+                                      onTap: () => _showAchievementDetails(
+                                        context,
+                                        item,
+                                        true,
+                                        unlocked[item.id],
+                                      ),
+                                      child: SizedBox(
+                                        width: 92,
+                                        child: Column(
+                                          children: [
+                                            _buildShieldBadge(
+                                              icon: item.icon,
+                                              unlocked: true,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              item.title,
+                                              textAlign: TextAlign.center,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                                color: primaryTextColor,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 28),
                   Text(
-                    'LATEST ACHIEVEMENTS',
+                    'ALL MILESTONES',
+                    key: OnboardingTourAnchors.achievements,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -711,116 +902,103 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                       color: secondaryTextColor,
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  if (catalog.isEmpty)
-                     Text(
-                      'Loading achievements catalog...',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: secondaryTextColor),
-                    )
-                  else if (latestThree.isEmpty)
-                    Text(
-                      'Complete a scan to unlock your first badge.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: secondaryTextColor),
-                    )
-                  else
-                    Row(
-                      // One badge -> centered; two or three -> spread evenly.
-                      mainAxisAlignment: latestThree.length == 1
-                          ? MainAxisAlignment.center
-                          : MainAxisAlignment.spaceEvenly,
-                      children: latestThree.map((item) {
-                        return GestureDetector(
-                          onTap: () => _showAchievementDetails(context, item, true, unlocked[item.id]),
-                          child: Column(
-                            children: [
-                              _buildShieldBadge(icon: item.icon, unlocked: true),
-                              const SizedBox(height: 12),
-                              Text(
-                                item.title,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: primaryTextColor,
+                  const SizedBox(height: 16),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final columns = constraints.maxWidth >= 900
+                          ? 5
+                          : constraints.maxWidth >= 600
+                          ? 4
+                          : 3;
+                      final textScale = MediaQuery.textScalerOf(
+                        context,
+                      ).scale(1);
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: catalog.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: (0.76 / textScale).clamp(
+                            0.38,
+                            0.76,
+                          ),
+                        ),
+                        itemBuilder: (context, index) {
+                          final item = catalog[index];
+                          final isUnlocked = unlocked.containsKey(item.id);
+                          void onTap() {
+                            _showAchievementDetails(
+                              context,
+                              item,
+                              isUnlocked,
+                              unlocked[item.id],
+                            );
+                          }
+
+                          return Semantics(
+                            button: true,
+                            label:
+                                '${item.title} badge, ${isUnlocked ? 'unlocked' : 'locked'}',
+                            onTap: onTap,
+                            child: ExcludeSemantics(
+                              child: Material(
+                                color: cardColor,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: BorderSide(
+                                    color: isUnlocked
+                                        ? AppColors.gold.withValues(alpha: 0.5)
+                                        : (isDark
+                                              ? AppColors.darkBorder
+                                              : AppColors.lightBorder),
+                                  ),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: onTap,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        _buildShieldBadge(
+                                          icon: item.icon,
+                                          unlocked: isUnlocked,
+                                          size: 48,
+                                          iconSize: 22,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          item.title,
+                                          textAlign: TextAlign.center,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: isUnlocked
+                                                ? primaryTextColor
+                                                : secondaryTextColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 28),
-            Text(
-              'ALL MILESTONES',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-                color: secondaryTextColor,
-              ),
-            ),
-            const SizedBox(height: 16),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: catalog.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 14,
-                mainAxisSpacing: 20,
-                childAspectRatio: 0.8,
-              ),
-              itemBuilder: (context, index) {
-                final item = catalog[index];
-                final isUnlocked = unlocked.containsKey(item.id);
-
-                return GestureDetector(
-                  onTap: () => _showAchievementDetails(context, item, isUnlocked, unlocked[item.id]),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isUnlocked
-                            ? AppColors.gold.withValues(alpha: 0.5)
-                            : (isDark ? Colors.transparent : Colors.grey.shade300),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildShieldBadge(icon: item.icon, unlocked: isUnlocked, size: 48, iconSize: 22),
-                        const SizedBox(height: 8),
-                        Text(
-                          item.title,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: isUnlocked ? primaryTextColor : Colors.grey.shade500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-          ),
-          ),
           ),
           // Off-screen share card: laid out so its RepaintBoundary can be
           // captured to a PNG, but positioned far above the viewport so it is
@@ -875,5 +1053,6 @@ class _ShieldPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _ShieldPainter oldDelegate) => oldDelegate.color != color;
+  bool shouldRepaint(covariant _ShieldPainter oldDelegate) =>
+      oldDelegate.color != color;
 }

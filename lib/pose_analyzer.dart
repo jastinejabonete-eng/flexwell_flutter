@@ -2,18 +2,27 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'form_smoother.dart';
+import 'knn_core.dart';
 import 'knn_worker.dart';
+import 'pose_landmark_requirements.dart';
 
 class AnalysisResult {
   final bool isCorrect;
   final String message;
-  final double repSignal; // meaning differs by exercise -- see class comment below
+  final double
+  repSignal; // meaning differs by exercise -- see class comment below
   final bool landmarksReliable;
+
   /// Landmark-smoothed copy of the input pose, for on-screen drawing only
   /// (classification uses the raw pose). Null when there was no pose.
   final Pose? smoothedPose;
-  AnalysisResult(this.isCorrect, this.message, this.repSignal,
-      {this.landmarksReliable = true, this.smoothedPose});
+  AnalysisResult(
+    this.isCorrect,
+    this.message,
+    this.repSignal, {
+    this.landmarksReliable = true,
+    this.smoothedPose,
+  });
 }
 
 class _Point2D {
@@ -35,19 +44,22 @@ class _Point3D {
 ///   Squat       (left):  [left_knee_angle (hip-knee-ankle), torso_lean_from_vertical]
 ///   Push-Up     (left):  [left_elbow_angle (shoulder-elbow-wrist),
 ///                         body_line_angle (shoulder-hip-ankle)]
-///   Pull-Up     (back):  [vertical_shoulder_displacement, elbow_spread_ratio]
-///   Lunge       (left):  [front_knee_angle, torso_lean_angle]
-///   Plank       (left):  [back_line_angle, hip_deviation_ratio]
-///   Side Plank  (left):  [back_line_angle, hip_deviation_ratio]
+///   Pull-Up     (back):  [vertical_shoulder_displacement]
+///   Lunge       (left):  [front_knee_angle, torso_lean_angle, shin_angle,
+///                         hip_ankle_gap, thigh_angle]
+///   Plank       (left):  [back_line_angle, hip_deviation_ratio,
+///                         shoulder_elbow_offset]
+///   Side Plank  (left):  [back_line_angle, hip_deviation_ratio,
+///                         shoulder_elbow_offset]
 ///
 /// NOTE: for Squat/Push-Up/Pull-Up, `AnalysisResult.repSignal` is ALWAYS the
 /// vertical displacement (used by camera_screen.dart for rep counting), even
 /// though the Squat and Push-Up classifiers' first feature is an angle.
 ///
-/// Squat/Push-Up/Pull-Up need per-session CALIBRATION (first ~10 reliable
-/// frames establish a neutral baseline) for that displacement signal. Only
+/// Squat/Push-Up/Pull-Up need per-session CALIBRATION (a stable one-second
+/// window establishes a neutral baseline) for that displacement signal. Only
 /// Pull-Up's classifier features also depend on it; Squat and Push-Up
-/// features are calibration-free angles, exactly like extract_features.py.
+/// classifier features are calibration-free angles, exactly like training.
 /// Because of this state, create ONE
 /// PoseAnalyzer instance per camera session and call resetCalibration()
 /// whenever a new session/exercise starts.
@@ -64,13 +76,27 @@ class _Point3D {
 ///      the user).
 ///   2. The peak is considered reached when the movement starts to reverse
 ///      (signal drops below the peak by [_peakDropMargin]), when the user
-///      dwells at a deep peak for [_dwellFrames] frames, or when the rep ends.
+///      dwells at a deep peak for [_dwellDuration], or when the rep ends.
 ///   3. At that moment the stored peak features are classified exactly once.
 ///      That verdict is then returned for the remaining engaged frames of the
-///      rep, and (if incorrect) held for [_verdictHoldFrames] frames after the
+///      rep, and (if incorrect) held for [_verdictHoldDuration] after the
 ///      rep ends so the on-screen feedback is actually visible.
 ///   4. The state is cleared when the next rep starts.
 class PoseAnalyzer {
+  final Future<KnnVerdict> Function(String exercise, List<double> features)
+  _classify;
+  final DateTime Function() _clock;
+
+  PoseAnalyzer({
+    Future<KnnVerdict> Function(String exercise, List<double> features)?
+    classifier,
+    DateTime Function()? clock,
+  }) : _classify =
+           classifier ??
+           ((exercise, features) =>
+               KnnWorker.instance.classifyDetailed(exercise, features)),
+       _clock = clock ?? DateTime.now;
+
   static const repBasedExercises = {'Squat', 'Push-Up', 'Lunge', 'Pull-Up'};
   static const frontBackExercises = {'Squat', 'Push-Up', 'Pull-Up'};
   static const _correctionMessages = {
@@ -126,6 +152,12 @@ class PoseAnalyzer {
   /// Returns a reason string when the user is not in [exercise]'s starting
   /// position (so the UI can show orange + the message), or null when ready.
   static String? checkStartPosition(String exercise, Pose pose) {
+    if (!_reliable(
+      pose,
+      PoseLandmarkRequirements.forExercise(exercise).toList(),
+    )) {
+      return null;
+    }
     final l = pose.landmarks;
     switch (exercise) {
       case 'Squat':
@@ -135,7 +167,9 @@ class PoseAnalyzer {
         final s = l[_lShoulder];
         final h = l[_lHip];
         final a = l[_lAnkle];
-        if (s == null || h == null || a == null) return null; // landmark check handles it
+        if (s == null || h == null || a == null) {
+          return null; // landmark check handles it
+        }
         final torsoDrop = (h.y - s.y); // positive when hip is below shoulder
         if (torsoDrop < 0.05) {
           return 'Stand up straight to start -- face your left side to the camera';
@@ -183,9 +217,15 @@ class PoseAnalyzer {
   int _traceCounter = 0;
   final List<double> _calibrationYs = [];
   final List<double> _calibrationScales = [];
+  final List<DateTime> _calibrationTimes = [];
   double? _baselineY;
   double? _baselineScale;
-  static const int _calibrationFrameCount = 10;
+  static const Duration _calibrationWindow = Duration(seconds: 1);
+  static const Duration _minimumCalibrationWindow = Duration(
+    milliseconds: 900,
+  );
+  static const int _minimumCalibrationSamples = 4;
+
   /// Stillness threshold for calibration, matching the trainer's
   /// CALIBRATION_STILLNESS_FRACTION (extract_features.py:94). The calibration
   /// window is only accepted when y_range / mean_scale <= this value.
@@ -218,30 +258,32 @@ class PoseAnalyzer {
   List<double>? _emaRaw;
   static const double _emaAlpha = 0.5;
 
-  // Number of consecutive frames the current rep has been engaged. We don't
-  // judge form until this reaches _minEngagedFrames.
-  int _engagedFrames = 0;
-  static const int _minEngagedFrames = 3;
+  // Wall-clock timing keeps rep decisions consistent when the camera adapts
+  // its frame-skip interval to device performance.
+  DateTime? _engagedSince;
+  static const Duration _minimumEngagement = Duration(milliseconds: 200);
 
   // ---- Per-rep verdict state ----
   // True once the current rep's peak has been classified (exactly once).
   bool _repCommitted = false;
   // The committed verdict for the current rep (null until committed).
   bool? _repVerdict;
-  // Frames since the peak signal last increased (used to detect a pause at
-  // the bottom before the user starts coming back up).
-  int _framesSincePeak = 0;
-  // Frames of remaining "incorrect" feedback to show after the rep has ended.
-  int _verdictHoldFramesLeft = 0;
+  // Kept separate from a missing verdict so OOD is not reported as an
+  // unavailable model.
+  bool _repOutOfDistribution = false;
+  // Time since the peak signal last increased (used to detect a pause at the
+  // bottom before the user starts coming back up).
+  DateTime? _peakLastImprovedAt;
+  DateTime? _verdictHoldUntil;
 
   // The movement has reversed once the signal falls this far below the peak
   // (displacement is normalised by torso/shoulder length).
   static const double _peakDropMargin = 0.04;
-  // ~0.4 s at the camera loop's ~10 fps.
-  static const int _dwellFrames = 4;
-  // ~1 s at ~10 fps: how long an incorrect verdict stays on screen after the
-  // rep has returned to standing.
-  static const int _verdictHoldFrames = 10;
+  // Ignore tiny EMA/noise increases so a stable hold can satisfy dwell timing.
+  static const double _peakImprovementThreshold = 0.01;
+  // Time-based thresholds remain stable as camera frame skipping adapts.
+  static const Duration _dwellDuration = Duration(milliseconds: 400);
+  static const Duration _verdictHoldDuration = Duration(seconds: 1);
 
   // Smooths per-frame verdicts for Lunge/Plank/Side Plank so scoring and display
   // don't react to single misclassified frames.
@@ -286,6 +328,7 @@ class PoseAnalyzer {
   void resetCalibration() {
     _calibrationYs.clear();
     _calibrationScales.clear();
+    _calibrationTimes.clear();
     _lmEma.clear();
     _baselineY = null;
     _baselineScale = null;
@@ -298,11 +341,12 @@ class PoseAnalyzer {
     _peakFeatures = null;
     _hasPeakSignal = false;
     _peakSignal = 0;
-    _engagedFrames = 0;
-    _framesSincePeak = 0;
+    _engagedSince = null;
+    _peakLastImprovedAt = null;
     _repCommitted = false;
     _repVerdict = null;
-    _verdictHoldFramesLeft = 0;
+    _repOutOfDistribution = false;
+    _verdictHoldUntil = null;
   }
 
   static double _angle(PoseLandmark a, PoseLandmark b, PoseLandmark c) {
@@ -331,18 +375,20 @@ class PoseAnalyzer {
   }
 
   static double _torsoLength(Pose pose) {
-    final shoulderMid = _midpoint(pose.landmarks[_lShoulder]!, pose.landmarks[_rShoulder]!);
+    final shoulderMid = _midpoint(
+      pose.landmarks[_lShoulder]!,
+      pose.landmarks[_rShoulder]!,
+    );
     final hipMid = _midpoint(pose.landmarks[_lHip]!, pose.landmarks[_rHip]!);
     final dx = shoulderMid.x - hipMid.x;
     final dy = shoulderMid.y - hipMid.y;
     return sqrt(dx * dx + dy * dy);
   }
 
-  /// Push-Up uses shoulder width as scale (torso length foreshortens in a
-  /// front-on shot).
+  /// Push-Up uses the left shoulder-to-hip length for its left-profile view.
   static double _calibrationScale(String exercise, Pose pose) {
     if (exercise == 'Push-Up') {
-      return _dist(pose.landmarks[_lShoulder]!, pose.landmarks[_rShoulder]!);
+      return _dist(pose.landmarks[_lShoulder]!, pose.landmarks[_lHip]!);
     }
     return _torsoLength(pose);
   }
@@ -350,16 +396,25 @@ class PoseAnalyzer {
   static _Point2D _referencePoint(String exercise, Pose pose) {
     if (exercise == 'Squat') {
       return _midpoint(pose.landmarks[_lHip]!, pose.landmarks[_rHip]!);
+    } else if (exercise == 'Push-Up') {
+      final shoulder = pose.landmarks[_lShoulder]!;
+      return _Point2D(shoulder.x, shoulder.y);
     } else {
-      return _midpoint(pose.landmarks[_lShoulder]!, pose.landmarks[_rShoulder]!);
+      return _midpoint(
+        pose.landmarks[_lShoulder]!,
+        pose.landmarks[_rShoulder]!,
+      );
     }
   }
 
   // ---- Left-side angle features: must stay identical to extract_features.py ----
 
   /// squat_knee_angle(): left hip-knee-ankle. ~170+ standing, smaller = deeper.
-  static double _squatKneeAngle(Pose pose) =>
-      _angle(pose.landmarks[_lHip]!, pose.landmarks[_lKnee]!, pose.landmarks[_lAnkle]!);
+  static double _squatKneeAngle(Pose pose) => _angle(
+    pose.landmarks[_lHip]!,
+    pose.landmarks[_lKnee]!,
+    pose.landmarks[_lAnkle]!,
+  );
 
   /// squat_torso_lean() / Lunge torso lean: left shoulder-hip line from
   /// vertical in degrees (0 = upright).
@@ -373,19 +428,28 @@ class PoseAnalyzer {
 
   /// pushup_elbow_angle(): left shoulder-elbow-wrist. ~170+ at the top,
   /// shrinking toward ~70-90 at the bottom.
-  static double _pushupElbowAngle(Pose pose) =>
-      _angle(pose.landmarks[_lShoulder]!, pose.landmarks[_lElbow]!, pose.landmarks[_lWrist]!);
+  static double _pushupElbowAngle(Pose pose) => _angle(
+    pose.landmarks[_lShoulder]!,
+    pose.landmarks[_lElbow]!,
+    pose.landmarks[_lWrist]!,
+  );
 
   /// pushup_body_line_angle(): left shoulder-hip-ankle. ~180 = straight line.
-  static double _pushupBodyLineAngle(Pose pose) =>
-      _angle(pose.landmarks[_lShoulder]!, pose.landmarks[_lHip]!, pose.landmarks[_lAnkle]!);
+  static double _pushupBodyLineAngle(Pose pose) => _angle(
+    pose.landmarks[_lShoulder]!,
+    pose.landmarks[_lHip]!,
+    pose.landmarks[_lAnkle]!,
+  );
 
   /// feature_2 (feature_2_value() in extract_features.py).
   static double _bonusRatio(String exercise, Pose pose) {
     if (exercise == 'Squat') return _torsoLeanAngle(pose);
     if (exercise == 'Push-Up') return _pushupBodyLineAngle(pose);
     final elbowDist = _dist(pose.landmarks[_lElbow]!, pose.landmarks[_rElbow]!);
-    final shoulderDist = _dist(pose.landmarks[_lShoulder]!, pose.landmarks[_rShoulder]!);
+    final shoulderDist = _dist(
+      pose.landmarks[_lShoulder]!,
+      pose.landmarks[_rShoulder]!,
+    );
     return shoulderDist > 1e-6 ? elbowDist / shoulderDist : 0;
   }
 
@@ -394,30 +458,39 @@ class PoseAnalyzer {
     final ref = _referencePoint(exercise, pose);
     final scale = _calibrationScale(exercise, pose);
     if (scale < 1e-6) return false;
+    final now = _clock();
     _calibrationYs.add(ref.y);
     _calibrationScales.add(scale);
-    // Keep only the last _calibrationFrameCount samples (sliding window).
-    if (_calibrationYs.length > _calibrationFrameCount) {
+    _calibrationTimes.add(now);
+    // Keep a time-based sliding window so slower devices use the same
+    // calibration duration and stillness interval as faster devices.
+    while (_calibrationTimes.length > 1 &&
+        now.difference(_calibrationTimes.first) > _calibrationWindow) {
+      _calibrationTimes.removeAt(0);
       _calibrationYs.removeAt(0);
       _calibrationScales.removeAt(0);
     }
-    if (_calibrationYs.length == _calibrationFrameCount) {
+    if (_calibrationYs.length >= _minimumCalibrationSamples &&
+        now.difference(_calibrationTimes.first) >= _minimumCalibrationWindow) {
       // Stillness check: the window must be stable before locking the baseline.
       // The trainer uses CALIBRATION_STILLNESS_FRACTION = 0.06 (y_range / mean_scale).
       // Without this, a user who is still moving gets a poor baseline, which
       // directly affects Pull-Up's displacement feature and rep timing.
       final meanScale =
-          _calibrationScales.reduce((a, b) => a + b) / _calibrationScales.length;
-      final yRange = _calibrationYs.reduce((a, b) => a > b ? a : b) -
+          _calibrationScales.reduce((a, b) => a + b) /
+          _calibrationScales.length;
+      final yRange =
+          _calibrationYs.reduce((a, b) => a > b ? a : b) -
           _calibrationYs.reduce((a, b) => a < b ? a : b);
-      if (meanScale > 1e-6 && yRange / meanScale <= _calibrationStillnessFraction) {
-        _baselineY = _calibrationYs.reduce((a, b) => a + b) / _calibrationYs.length;
+      if (meanScale > 1e-6 &&
+          yRange / meanScale <= _calibrationStillnessFraction) {
+        _baselineY =
+            _calibrationYs.reduce((a, b) => a + b) / _calibrationYs.length;
         _baselineScale = meanScale;
       }
     }
     return _baselineY != null;
   }
-
 
   /// Squat only: keeps the standing baseline in step with where the hips
   /// really are while the user is standing. The one-off calibration at the
@@ -429,7 +502,7 @@ class PoseAnalyzer {
   /// Only updates when the user is upright (knee straight), not mid-rep, and
   /// not descending, so a real squat never drags the baseline down with it.
   void _trackSquatBaseline(Pose pose, _Point2D ref) {
-    if (_engagedFrames != 0) return;
+    if (_engagedSince != null) return;
     if (_squatKneeAngle(pose) < 150) return;
     final d = (ref.y - _baselineY!) / _baselineScale!;
     final double alpha;
@@ -447,7 +520,11 @@ class PoseAnalyzer {
     }
   }
 
-  List<double> _classifierFeatures(String exercise, Pose pose, double displacement) {
+  List<double> _classifierFeatures(
+    String exercise,
+    Pose pose,
+    double displacement,
+  ) {
     if (exercise == 'Squat') {
       return [_squatKneeAngle(pose), _bonusRatio(exercise, pose)];
     }
@@ -482,10 +559,11 @@ class PoseAnalyzer {
     // ~0, so a degenerate frame is rejected by the classifier's finite
     // check rather than scored as a 0-length torso.
     final trunk = _dist(shoulder, hip);
-    final hipAnkleGap = trunk.abs() > 1e-6 ? (ankle.y - hip.y) / trunk : double.nan;
+    final hipAnkleGap = trunk.abs() > 1e-6
+        ? (ankle.y - hip.y) / trunk
+        : double.nan;
     // Front thigh angle from vertical (depth / stance).
-    final thighAngle =
-        atan2(knee.x - hip.x, knee.y - hip.y).abs() * 180 / pi;
+    final thighAngle = atan2(knee.x - hip.x, knee.y - hip.y).abs() * 180 / pi;
     return [kneeAngle, torsoLean, shinAngle, hipAnkleGap, thighAngle];
   }
 
@@ -498,44 +576,53 @@ class PoseAnalyzer {
     final lineLen = _dist(shoulder, ankle);
     double hipDeviation = 0;
     if (lineLen > 1e-6) {
-      final numerator = ((ankle.y - shoulder.y) * hip.x -
-              (ankle.x - shoulder.x) * hip.y +
-              ankle.x * shoulder.y -
-              ankle.y * shoulder.x)
-          .abs();
+      final numerator =
+          ((ankle.y - shoulder.y) * hip.x -
+                  (ankle.x - shoulder.x) * hip.y +
+                  ankle.x * shoulder.y -
+                  ankle.y * shoulder.x)
+              .abs();
       hipDeviation = numerator / lineLen / lineLen;
     }
     // Third feature: horizontal shoulder-to-elbow offset, normalised by the
     // shoulder-ankle line length. MUST stay identical to pk_shoulder_elbow_dx
     // in extract_features.py (Python side), or train/serve skew silently
     // kills accuracy. Raises Plank/Side Plank grouped-CV accuracy ~0.72 -> 0.82.
-    final double shoulderElbowDx =
-        lineLen > 1e-6 ? (shoulder.x - elbow.x).abs() / lineLen : 0.0;
+    final double shoulderElbowDx = lineLen > 1e-6
+        ? (shoulder.x - elbow.x).abs() / lineLen
+        : 0.0;
     return [backAngle, hipDeviation, shoulderElbowDx];
   }
 
-  /// Classifies the stored peak of the current rep ONCE and stores the verdict.
-  /// Returns false (and commits nothing) if the model can't give a verdict.
-  /// Returns a verdict, or null when the pose is out-of-distribution (unfamiliar
-  /// form) or the model is genuinely unavailable. The caller must distinguish
-  /// these two cases -- collapsing both to "Form model unavailable" tells the
-  /// user their pose is unfamiliar when really the model just isn't loaded.
-  Future<bool?> _commitRepVerdict(String exercise, String reason) async {
+  /// Classifies the stored peak once. OOD is committed as a distinct state;
+  /// unavailable model results remain uncommitted.
+  Future<KnnVerdict> _commitRepVerdict(String exercise, String reason) async {
     final features = _peakFeatures;
-    if (features == null) return null;
-    final detailed = await KnnWorker.instance.classifyDetailed(exercise, features);
-    if (detailed.isOutOfDistribution) return null; // unfamiliar form, not a model error
+    if (features == null) return const KnnVerdict.unavailable();
+    final detailed = await _classify(exercise, features);
+    if (detailed.isOutOfDistribution) {
+      _repCommitted = true;
+      _repVerdict = null;
+      _repOutOfDistribution = true;
+      _verdictHoldUntil = _clock().add(_verdictHoldDuration);
+      return detailed;
+    }
     final verdict = detailed.isCorrect;
-    if (verdict == null) return null; // model unavailable
+    if (verdict == null) return detailed; // model unavailable
     _repCommitted = true;
     _repVerdict = verdict;
-    _verdictHoldFramesLeft = verdict ? 0 : _verdictHoldFrames;
+    _repOutOfDistribution = false;
+    _verdictHoldUntil = verdict
+        ? null
+        : _clock().add(_verdictHoldDuration);
     if (kDebugMode) {
-      debugPrint('[$exercise] rep verdict ($reason): peak=$features '
-          'signal=${_peakSignal.toStringAsFixed(2)} '
-          'verdict=$verdict');
+      debugPrint(
+        '[$exercise] rep verdict ($reason): peak=$features '
+        'signal=${_peakSignal.toStringAsFixed(2)} '
+        'verdict=$verdict',
+      );
     }
-    return verdict;
+    return detailed;
   }
 
   /// Judge a rep that is still in progress when the session ends, so a squat
@@ -543,34 +630,75 @@ class PoseAnalyzer {
   /// instead of silently dropped. Call from CameraScreen._endSession() before
   /// saving the session. No-op when there's nothing to judge.
   Future<void> finalizeRep(String exercise) async {
-    if (_peakFeatures != null && !_repCommitted && _engagedFrames >= _minEngagedFrames) {
+    if (_peakFeatures != null &&
+        !_repCommitted &&
+        _hasMinimumEngagement()) {
       await _commitRepVerdict(exercise, 'session ended');
     }
   }
 
-  AnalysisResult _repVerdictResult(String exercise, double repSignal, [Pose? smoothedPose]) {
+  bool _hasMinimumEngagement() {
+    final started = _engagedSince;
+    return started != null &&
+        _clock().difference(started) >= _minimumEngagement;
+  }
+
+  AnalysisResult _repVerdictResult(
+    String exercise,
+    double repSignal, [
+    Pose? smoothedPose,
+  ]) {
+    if (_repOutOfDistribution) {
+      return AnalysisResult(
+        false,
+        'Unfamiliar form - try to match the guide',
+        repSignal,
+        landmarksReliable: false,
+        smoothedPose: smoothedPose,
+      );
+    }
     final verdict = _repVerdict ?? true;
-    final message = verdict ? 'Good form' : (_correctionMessages[exercise] ?? 'Adjust your form');
-    return AnalysisResult(verdict, message, repSignal, smoothedPose: smoothedPose);
+    final message = verdict
+        ? 'Good form'
+        : (_correctionMessages[exercise] ?? 'Adjust your form');
+    return AnalysisResult(
+      verdict,
+      message,
+      repSignal,
+      smoothedPose: smoothedPose,
+    );
   }
 
   Future<AnalysisResult> analyze(String exercise, Pose pose) async {
+    final notReady = checkStartPosition(exercise, pose);
+    if (notReady != null) {
+      return AnalysisResult(
+        false,
+        notReady,
+        0,
+        landmarksReliable: false,
+        smoothedPose: pose,
+      );
+    }
+
     if (frontBackExercises.contains(exercise)) {
-      // Squat/Push-Up are filmed from the left side, so only left-side
-      // landmarks are required (the right side is often occluded).
-      final required = exercise == 'Squat'
-          ? [_lShoulder, _lHip, _lKnee, _lAnkle]
-          : exercise == 'Push-Up'
-              ? [_lShoulder, _lElbow, _lWrist, _lHip, _lAnkle]
-              : [_lShoulder, _rShoulder, _lElbow, _rElbow];
+      final required = PoseLandmarkRequirements.forExercise(exercise).toList();
       if (!_reliable(pose, required)) {
         _emaRaw = null;
-        return AnalysisResult(false, 'Can\'t see you clearly - step back so your whole body is in frame', 0,
-            landmarksReliable: false);
+        return AnalysisResult(
+          false,
+          'Can\'t see you clearly - step back so your whole body is in frame',
+          0,
+          landmarksReliable: false,
+        );
       }
       if (!_tryCalibrate(exercise, pose)) {
-        return AnalysisResult(true, 'Calibrating - hold your starting position', 0,
-            landmarksReliable: false);
+        return AnalysisResult(
+          true,
+          'Calibrating - hold your starting position',
+          0,
+          landmarksReliable: false,
+        );
       }
       // Smoothed pose for drawing only. Computed once, after reliability passes,
       // before any classification branch returns.
@@ -585,7 +713,10 @@ class PoseAnalyzer {
       final prev = _emaRaw;
       final smoothed = prev == null
           ? raw
-          : [for (var i = 0; i < raw.length; i++) _emaAlpha * raw[i] + (1 - _emaAlpha) * prev[i]];
+          : [
+              for (var i = 0; i < raw.length; i++)
+                _emaAlpha * raw[i] + (1 - _emaAlpha) * prev[i],
+            ];
       _emaRaw = smoothed;
 
       final motion = smoothed[0];
@@ -598,56 +729,66 @@ class PoseAnalyzer {
       final signal = motion * sign;
 
       if (kDebugMode && ++_traceCounter % 3 == 0) {
-        // ~3 lines/s. Squat each line to see why no rep is being judged.
-        debugPrint('[$exercise trace] disp=${motion.toStringAsFixed(2)} '
-            'engage>=${_engageThreshold.toStringAsFixed(2)} '
-            'knee=${clsFeatures[0].toStringAsFixed(0)} '
-            'torso=${clsFeatures[1].toStringAsFixed(0)} '
-            'engagedFrames=$_engagedFrames committed=$_repCommitted '
-            'baselineY=${_baselineY!.toStringAsFixed(0)} '
-            'scale=${_baselineScale!.toStringAsFixed(0)}'); // remove later
+        debugPrint(
+          '[$exercise trace] disp=${motion.toStringAsFixed(2)} '
+          'engage>=${_engageThreshold.toStringAsFixed(2)} '
+          'features=$clsFeatures '
+          'engaged=${_engagedSince != null} committed=$_repCommitted '
+          'baselineY=${_baselineY!.toStringAsFixed(0)} '
+          'scale=${_baselineScale!.toStringAsFixed(0)}',
+        );
       }
 
       // ---- Not engaged: idle, or the rep has just finished ----
       if (signal < _engageThreshold) {
         // A rep that ended before we saw a reversal / dwell (very quick rep):
         // classify its peak now so it still gets a verdict.
-        if (_peakFeatures != null && !_repCommitted && _engagedFrames >= _minEngagedFrames) {
+        if (_peakFeatures != null &&
+            !_repCommitted &&
+            _hasMinimumEngagement()) {
           await _commitRepVerdict(exercise, 'rep ended');
         }
 
         _peakFeatures = null;
         _hasPeakSignal = false;
         _peakSignal = 0;
-        _engagedFrames = 0;
-        _framesSincePeak = 0;
+        _engagedSince = null;
+        _peakLastImprovedAt = null;
 
         // Keep showing an incorrect verdict briefly after standing back up,
         // otherwise the ascent is often only 1-3 frames and the feedback
         // would flash by unseen.
-        if (_repCommitted && _repVerdict == false && _verdictHoldFramesLeft > 0) {
-          _verdictHoldFramesLeft--;
+        if (_repCommitted &&
+            (_repVerdict == false || _repOutOfDistribution) &&
+            _verdictHoldUntil != null &&
+            _clock().isBefore(_verdictHoldUntil!)) {
           return _repVerdictResult(exercise, repSignal, smoothedPose);
         }
         _repCommitted = false;
         _repVerdict = null;
-        _verdictHoldFramesLeft = 0;
+        _repOutOfDistribution = false;
+        _verdictHoldUntil = null;
         // Not in a rep (standing / between reps / a rep that hasn't been judged
         // yet): this is NEUTRAL, not "Good form". Claiming green here with no
         // classifier verdict is what made unjudged frames show a false green.
-        return AnalysisResult(false, 'Stand ready -- start your rep', repSignal,
-            landmarksReliable: false, smoothedPose: smoothedPose);
+        return AnalysisResult(
+          false,
+          'Stand ready -- start your rep',
+          repSignal,
+          landmarksReliable: false,
+          smoothedPose: smoothedPose,
+        );
       }
 
       // ---- Engaged ----
-      if (_engagedFrames == 0) {
+      if (_engagedSince == null) {
         // First engaged frame of a new rep: drop the previous rep's verdict.
+        _engagedSince = _clock();
         _repCommitted = false;
         _repVerdict = null;
-        _verdictHoldFramesLeft = 0;
-        _framesSincePeak = 0;
+        _repOutOfDistribution = false;
+        _verdictHoldUntil = null;
       }
-      _engagedFrames++;
 
       if (!_repCommitted) {
         // Peak FEATURES: the frame where feature_1 is lowest so far, exactly
@@ -659,21 +800,31 @@ class PoseAnalyzer {
         }
         // Peak TIMING: based on displacement, used only to decide when the
         // bottom of the rep has been reached.
-        if (!_hasPeakSignal || signal > _peakSignal!) {
+        if (!_hasPeakSignal ||
+            signal > _peakSignal + _peakImprovementThreshold) {
           _hasPeakSignal = true;
           _peakSignal = signal;
-          _framesSincePeak = 0;
-        } else {
-          _framesSincePeak++;
+          _peakLastImprovedAt = _clock();
         }
 
-        if (_engagedFrames >= _minEngagedFrames) {
+        if (_hasMinimumEngagement()) {
           final reversed = signal <= _peakSignal - _peakDropMargin;
-          final dwelling = _peakSignal >= _dwellMinPeak && _framesSincePeak >= _dwellFrames;
+          final dwelling =
+              _peakSignal >= _dwellMinPeak &&
+              _peakLastImprovedAt != null &&
+              _clock().difference(_peakLastImprovedAt!) >= _dwellDuration;
           if (reversed || dwelling) {
-            final ok = await _commitRepVerdict(exercise, reversed ? 'reversal' : 'dwell');
-            if (ok == null) {
-              return AnalysisResult(false, 'Form model unavailable', repSignal, landmarksReliable: false);
+            final verdict = await _commitRepVerdict(
+              exercise,
+              reversed ? 'reversal' : 'dwell',
+            );
+            if (!verdict.isOutOfDistribution && verdict.isCorrect == null) {
+              return AnalysisResult(
+                false,
+                'Form model unavailable',
+                repSignal,
+                landmarksReliable: false,
+              );
             }
           }
         }
@@ -684,24 +835,37 @@ class PoseAnalyzer {
       // form (that hid every wrong squat whose pose was out-of-distribution
       // for the tiny Squat model). landmarksReliable=false renders it orange.
       if (!_repCommitted) {
-        return AnalysisResult(true, 'Hold at the bottom of the rep', repSignal,
-            smoothedPose: smoothedPose, landmarksReliable: false);
+        return AnalysisResult(
+          true,
+          'Hold at the bottom of the rep',
+          repSignal,
+          smoothedPose: smoothedPose,
+          landmarksReliable: false,
+        );
       }
       return _repVerdictResult(exercise, repSignal, smoothedPose);
     } else {
-      final required = [_lShoulder, _lHip, _lKnee, _lAnkle];
+      final required = PoseLandmarkRequirements.forExercise(exercise).toList();
       if (!_reliable(pose, required)) {
         _smoother.reset();
-        return AnalysisResult(false, 'Can\'t see you clearly - step back so your whole body is in frame', 0,
-            landmarksReliable: false);
+        return AnalysisResult(
+          false,
+          'Can\'t see you clearly - step back so your whole body is in frame',
+          0,
+          landmarksReliable: false,
+        );
       }
       final smoothedPose = _smoothPose(pose);
-      final features = exercise == 'Lunge' ? _lungeFeatures(pose) : _plankStyleFeatures(pose);
-      final verdict = await KnnWorker.instance.classifyDetailed(exercise, features);
+      final features = exercise == 'Lunge'
+          ? _lungeFeatures(pose)
+          : _plankStyleFeatures(pose);
+      final verdict = await _classify(exercise, features);
       if (kDebugMode && ++_traceCounter % 3 == 0) {
-        debugPrint('[$exercise frame] features='
-            '[${features.map((f) => f.toStringAsFixed(1)).join(", ")}] '
-            'verdict=${verdict.isCorrect} ood=${verdict.isOutOfDistribution}');
+        debugPrint(
+          '[$exercise frame] features='
+          '[${features.map((f) => f.toStringAsFixed(1)).join(", ")}] '
+          'verdict=${verdict.isCorrect} ood=${verdict.isOutOfDistribution}',
+        );
       }
       // Out-of-distribution: this pose is unlike anything the model was
       // trained on. Show an honest "can't judge" state rather than guessing
@@ -709,17 +873,33 @@ class PoseAnalyzer {
       // an untrained way to show a false green).
       if (verdict.isOutOfDistribution) {
         _smoother.reset();
-        return AnalysisResult(false, 'Unfamiliar form - try to match the guide',
-            features[0], landmarksReliable: false);
+        return AnalysisResult(
+          false,
+          'Unfamiliar form - try to match the guide',
+          features[0],
+          landmarksReliable: false,
+        );
       }
       final raw = verdict.isCorrect;
       if (raw == null) {
         _smoother.reset();
-        return AnalysisResult(false, 'Form model unavailable', features[0], landmarksReliable: false);
+        return AnalysisResult(
+          false,
+          'Form model unavailable',
+          features[0],
+          landmarksReliable: false,
+        );
       }
       final isCorrect = _smoother.add(raw);
-      final message = isCorrect ? 'Good form' : (_correctionMessages[exercise] ?? 'Adjust your form');
-      return AnalysisResult(isCorrect, message, features[0], smoothedPose: smoothedPose);
+      final message = isCorrect
+          ? 'Good form'
+          : (_correctionMessages[exercise] ?? 'Adjust your form');
+      return AnalysisResult(
+        isCorrect,
+        message,
+        features[0],
+        smoothedPose: smoothedPose,
+      );
     }
   }
 }

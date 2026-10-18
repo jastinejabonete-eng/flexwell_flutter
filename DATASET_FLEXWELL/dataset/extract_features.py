@@ -270,15 +270,15 @@ def squat_torso_lean(lm):
 
 def calibration_scale(exercise, lm):
     if exercise == "Push-Up":
-        # Torso-length foreshortens toward zero in a front-on push-up shot
-        # (the body extends in depth, not left-right), which blows up
-        # displacement/scale into noise. Shoulder width doesn't foreshorten
-        # the same way, so use it instead for this exercise only.
-        return euclidean(lm[L_SHOULDER], lm[R_SHOULDER])
+        # Runtime rep tracking uses the left-profile shoulder-to-hip length.
+        # The classifier's Push-Up training features remain calibration-free.
+        return euclidean(lm[L_SHOULDER], lm[L_HIP])
     return torso_length(lm)
 def raw_reference_point(exercise, lm):
     if exercise == "Squat":
         return midpoint(lm[L_HIP], lm[R_HIP])
+    elif exercise == "Push-Up":
+        return lm[L_SHOULDER]
     else:
         return midpoint(lm[L_SHOULDER], lm[R_SHOULDER])
 def feature_2_value(exercise, lm):

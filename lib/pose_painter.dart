@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'pose_landmark_requirements.dart';
 
 class PosePainter extends CustomPainter {
   final Pose? pose;
@@ -11,8 +12,8 @@ class PosePainter extends CustomPainter {
   final bool isNeutral;
   final Size imageSize;
 
-  /// The front-camera preview is mirrored, but ML Kit landmark coordinates are
-  /// not. When true, x is flipped so the skeleton lines up with the preview.
+  /// True only when the preview is explicitly mirrored by the app. Native
+  /// front-camera mirroring is already reflected in ML Kit's input pixels.
   final bool isFrontCamera;
 
   /// Hide hips, knees, ankles and feet (and every line touching them).
@@ -52,49 +53,7 @@ class PosePainter extends CustomPainter {
 
   /// Must mirror the `required` lists in PoseAnalyzer.analyze().
   static Set<PoseLandmarkType> requiredFor(String exercise) {
-    switch (exercise) {
-      case 'Squat':
-        return {
-          PoseLandmarkType.leftShoulder,
-          PoseLandmarkType.leftHip,
-          PoseLandmarkType.leftKnee,
-          PoseLandmarkType.leftAnkle,
-        };
-      case 'Push-Up':
-        return {
-          PoseLandmarkType.leftShoulder,
-          PoseLandmarkType.leftElbow,
-          PoseLandmarkType.leftWrist,
-          PoseLandmarkType.leftHip,
-          PoseLandmarkType.leftAnkle,
-        };
-      case 'Pull-Up':
-        return {
-          PoseLandmarkType.leftShoulder,
-          PoseLandmarkType.rightShoulder,
-          PoseLandmarkType.leftElbow,
-          PoseLandmarkType.rightElbow,
-        };
-      case 'Plank':
-      case 'Side Plank':
-        // _plankStyleFeatures() force-unwraps the left elbow for the
-        // shoulder-to-elbow offset feature, so it MUST be in this set. Without
-        // it a missing elbow throws and a low-confidence one silently distorts
-        // the feature -- the reliability gate never checked it.
-        return {
-          PoseLandmarkType.leftShoulder,
-          PoseLandmarkType.leftElbow,
-          PoseLandmarkType.leftHip,
-          PoseLandmarkType.leftAnkle,
-        };
-      default: // Lunge
-        return {
-          PoseLandmarkType.leftShoulder,
-          PoseLandmarkType.leftHip,
-          PoseLandmarkType.leftKnee,
-          PoseLandmarkType.leftAnkle,
-        };
-    }
+    return PoseLandmarkRequirements.forExercise(exercise);
   }
 
   bool _hasRequiredLandmarks(Pose pose) {
@@ -210,7 +169,7 @@ class PosePainter extends CustomPainter {
     }
 
     bool visible(PoseLandmark? lm) {
-      if (lm == null) return false;
+      if (lm == null || lm.likelihood < minLikelihood) return false;
       return !(hideLowerBody && _lowerBody.contains(lm.type));
     }
 
@@ -229,11 +188,7 @@ class PosePainter extends CustomPainter {
 
     final joints = <Offset>[];
     for (final landmark in currentPose.landmarks.values) {
-      // Check each landmark's own likelihood, not just the required set.
-      // Without this, a low-confidence joint (e.g. an occluded wrist) is drawn
-      // as a solid dot, making the skeleton look more certain than the pose
-      // estimate actually is.
-      if (visible(landmark) && landmark.likelihood >= minLikelihood) {
+      if (visible(landmark)) {
         joints.add(mapPoint(landmark));
       }
     }
