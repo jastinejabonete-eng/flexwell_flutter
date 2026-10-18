@@ -1,5 +1,3 @@
-import 'dart:async';
-import 'dart:collection';
 import 'dart:io';
 import 'dart:ui' show ImageByteFormat;
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'achievement_service.dart';
 import 'app_colors.dart';
+import 'firebase_status.dart';
 import 'onboarding_tour_steps.dart';
 
 /// Key for the off-screen share card that gets captured to a PNG.
@@ -36,94 +35,64 @@ class AchievementsScreen extends StatefulWidget {
 
 class _AchievementsScreenState extends State<AchievementsScreen> {
   // Streams for the global catalog and the user's specific unlocks
-  late final Stream<QuerySnapshot<Map<String, dynamic>>> _catalogStream;
-  late final Stream<QuerySnapshot<Map<String, dynamic>>>? _unlockedStream;
+  Stream<QuerySnapshot<Map<String, dynamic>>>? _catalogStream;
+  Stream<QuerySnapshot<Map<String, dynamic>>>? _unlockedStream;
+  bool _retryingCloud = false;
 
   // The badge currently being shared (null = sharing the overview card).
   // Set just before capture so the off-screen single-badge card renders the
   // correct badge.
   _Achievement? _shareBadge;
 
-  // Live subscription to the user's unlocked badges. When a NEW badge id
-  // appears (any badge, not just Share), we pop the celebration once. This
-  // covers badges that land while viewing this screen (e.g. a session write
-  // finishing, or the Share badge) so every unlock feels rewarded.
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _unlockedSub;
-  final Set<String> _knownUnlocked = {};
-  // Latest catalog snapshot, used to map a newly-unlocked id -> its title.
-  List<_Achievement> _catalogCache = const [];
-  // Ids queued to celebrate but not yet shown (dedupes rapid multi-unlocks).
-  final ListQueue<String> _pendingCelebrations = ListQueue<String>();
-  bool _celebrating = false;
-
   @override
   void initState() {
     super.initState();
-    // 1. Listen to the global achievements collection (managed by Admin PHP)
-    _catalogStream = FirebaseFirestore.instance
-        .collection('achievements')
-        .orderBy('order')
-        .snapshots();
-
-    // 2. Listen to the specific user's unlocked badges
-    final user = FirebaseAuth.instance.currentUser;
-    _unlockedStream = user == null
-        ? null
-        : FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .collection('unlocked_achievements')
-              .snapshots();
-    _unlockedSub = _unlockedStream?.listen(_onUnlockedSnapshot);
+    _bindCloudStreams();
+    FirebaseStatus.authRevision.addListener(_onAuthenticationChanged);
   }
 
   @override
   void dispose() {
-    _unlockedSub?.cancel();
+    FirebaseStatus.authRevision.removeListener(_onAuthenticationChanged);
     super.dispose();
   }
 
-  /// Fires the celebration popup for any badge id that appears for the first
-  /// time in the unlocked stream. Skips the very first snapshot (those badges
-  /// were unlocked in past sessions -- already celebrated then).
-  void _onUnlockedSnapshot(QuerySnapshot<Map<String, dynamic>> snap) {
-    final nowUnlocked = <String>{};
-    for (final doc in snap.docs) {
-      if (doc.data()['unlocked'] == true) nowUnlocked.add(doc.id);
-    }
-    // First emission: seed the known set, celebrate nothing.
-    if (_knownUnlocked.isEmpty &&
-        _pendingCelebrations.isEmpty &&
-        !_seededUnlocked) {
-      _knownUnlocked.addAll(nowUnlocked);
-      _seededUnlocked = true;
-      return;
-    }
-    final fresh = nowUnlocked.difference(_knownUnlocked);
-    _knownUnlocked.addAll(nowUnlocked);
-    for (final id in fresh) {
-      _pendingCelebrations.add(id);
-    }
-    _drainCelebrations();
+  void _onAuthenticationChanged() {
+    if (!mounted) return;
+    setState(_bindCloudStreams);
   }
 
-  bool _seededUnlocked = false;
+  void _bindCloudStreams() {
+    if (!FirebaseStatus.isInitialized) {
+      _catalogStream = null;
+      _unlockedStream = null;
+    } else {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        _catalogStream = null;
+        _unlockedStream = null;
+        return;
+      }
+      _catalogStream = FirebaseFirestore.instance
+          .collection('achievements')
+          .orderBy('order')
+          .snapshots();
+      _unlockedStream = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('unlocked_achievements')
+          .snapshots();
+    }
+  }
 
-  /// Shows celebration popups one at a time (so they don't stack), pulling the
-  /// badge title from the cached catalog.
-  void _drainCelebrations() {
-    if (_celebrating || _pendingCelebrations.isEmpty || !mounted) return;
-    final id = _pendingCelebrations.removeFirst();
-    final title = _catalogCache
-        .firstWhere(
-          (a) => a.id == id,
-          orElse: () => _Achievement(id, id, '', Icons.star_rounded, 0),
-        )
-        .title;
-    _celebrating = true;
-    _showUnlockCelebration(title).then((_) {
-      _celebrating = false;
-      _drainCelebrations();
+  Future<void> _retryCloud() async {
+    if (_retryingCloud) return;
+    setState(() => _retryingCloud = true);
+    await FirebaseStatus.ensureSignedIn();
+    if (!mounted) return;
+    setState(() {
+      _bindCloudStreams();
+      _retryingCloud = false;
     });
   }
 
@@ -241,10 +210,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
           : 'I just earned the "${badge.title}" achievement on FlexWell! 💪';
       final result = await Share.shareXFiles([XFile(file.path)], text: caption);
       if (result.status == ShareResultStatus.success) {
-        // The celebration popup is driven by the _unlockedStream listener
-        // (_onUnlockedSnapshot) the moment the new badge doc lands -- so we
-        // don't pop it here too, which would double up.
-        await AchievementService.unlockShareAchievement();
+        final newlyUnlocked = await AchievementService.unlockShareAchievement();
+        if (newlyUnlocked && mounted) {
+          await _showUnlockCelebration('Share');
+        }
       } else {
         messenger.showSnackBar(
           const SnackBar(content: Text('Share cancelled.')),
@@ -419,7 +388,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Check the Badges tab to see it.',
+              'Your Share badge has been added to your achievements.',
               textAlign: TextAlign.center,
               style: TextStyle(color: subtext, fontSize: 12.5),
             ),
@@ -679,17 +648,24 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_catalogStream == null) {
+      return _buildCloudUnavailableScreen(context);
+    }
     // Nested StreamBuilders to combine Global Catalog and User Unlocks
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: _catalogStream,
       builder: (context, catalogSnapshot) {
+        if (catalogSnapshot.hasError && !catalogSnapshot.hasData) {
+          return _buildCloudUnavailableScreen(context);
+        }
         final catalog = _parseCatalog(catalogSnapshot.data);
-        // Keep a cache so the celebration can map a newly-unlocked id -> title.
-        if (catalog.isNotEmpty) _catalogCache = catalog;
 
         return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: _unlockedStream,
           builder: (context, unlockedSnapshot) {
+            if (unlockedSnapshot.hasError && !unlockedSnapshot.hasData) {
+              return _buildCloudUnavailableScreen(context);
+            }
             final unlocked = _parseUnlocked(unlockedSnapshot.data);
             final hasError =
                 catalogSnapshot.hasError || unlockedSnapshot.hasError;
@@ -703,6 +679,55 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildCloudUnavailableScreen(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Achievements')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.cloud_off_rounded,
+                size: 40,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Cloud achievements are unavailable.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'You can still use the camera and tutorials. Check your '
+                'connection, then try again to sync badges.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: _retryingCloud ? null : _retryCloud,
+                child: _retryingCloud
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Try again'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

@@ -1,9 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'firebase_options.dart';
 import 'app_colors.dart';
+import 'firebase_status.dart';
 import 'main_navigation_screen.dart';
+import 'theme_preference.dart';
 import 'terms_screen.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.dark);
@@ -164,18 +165,15 @@ ThemeData _buildTheme(Brightness brightness) {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-    if (FirebaseAuth.instance.currentUser == null) {
-      await FirebaseAuth.instance.signInAnonymously();
-      debugPrint('Anonymous user authenticated: ${FirebaseAuth.instance.currentUser?.uid}');
-    }
-  } catch (e) {
-    debugPrint('Firebase initialization failed: $e');
-  }
+  await FirebaseStatus.initialize();
+  themeNotifier.value = await ThemePreference.load();
   final termsAccepted = await TermsService.hasAccepted();
   runApp(FlexWellApp(termsAccepted: termsAccepted));
+  if (FirebaseStatus.isInitialized) {
+    unawaited(FirebaseStatus.ensureSignedIn());
+  }
 }
+
 class FlexWellApp extends StatelessWidget {
   /// False on first launch (or after the terms version is bumped).
   final bool termsAccepted;
@@ -197,7 +195,7 @@ class FlexWellApp extends StatelessWidget {
           // theme, spreading that rebuild across the animation.
           themeAnimationDuration: const Duration(milliseconds: 200),
           themeAnimationCurve: Curves.easeInOut,
-          
+
           theme: _buildTheme(Brightness.light),
           darkTheme: _buildTheme(Brightness.dark),
           home: termsAccepted

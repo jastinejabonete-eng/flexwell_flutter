@@ -7,6 +7,7 @@ import 'app_colors.dart';
 import 'camera_screen.dart';
 import 'fade_route.dart';
 import 'exercise_camera_setup_dialog.dart';
+import 'firebase_status.dart';
 import 'onboarding_tour_steps.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -23,7 +24,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Every finished session is saved to users/{uid}/sessions with a 'dayKey'
   // (see AchievementService.recordSession). The streak is derived from those,
   // so it can never drift out of sync with what was actually recorded.
-  late final Stream<QuerySnapshot<Map<String, dynamic>>>? _sessionsStream;
+  Stream<QuerySnapshot<Map<String, dynamic>>>? _sessionsStream;
+  bool _retryingCloudHistory = false;
 
   // Search and Filter State
   String _searchQuery = '';
@@ -98,14 +100,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    _sessionsStream = uid == null
-        ? null
-        : FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .collection('sessions')
-              .snapshots();
+    _sessionsStream = _sessionsForCurrentUser();
+    FirebaseStatus.authRevision.addListener(_onAuthenticationChanged);
     _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
       setState(() {
         _now = DateTime.now();
@@ -115,8 +111,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
+    FirebaseStatus.authRevision.removeListener(_onAuthenticationChanged);
     _timer.cancel();
     super.dispose();
+  }
+
+  void _onAuthenticationChanged() {
+    if (!mounted) return;
+    setState(() => _sessionsStream = _sessionsForCurrentUser());
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>>? _sessionsForCurrentUser() {
+    if (!FirebaseStatus.isInitialized) return null;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return null;
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('sessions')
+        .snapshots();
+  }
+
+  Future<void> _retryCloudHistory() async {
+    if (_retryingCloudHistory) return;
+    setState(() => _retryingCloudHistory = true);
+    await FirebaseStatus.ensureSignedIn();
+    if (!mounted) return;
+    setState(() {
+      _sessionsStream = _sessionsForCurrentUser();
+      _retryingCloudHistory = false;
+    });
   }
 
   String _formatDateTime(DateTime dt) {
@@ -551,21 +575,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildStreakSection(bool isDark) {
     final stream = _sessionsStream;
     if (stream == null) {
-      return _StreakCard(
-        stats: _StreakStats.fromDayKeys(const [], _now),
-        now: _now,
+      return _StreakStatusCard(
         isDark: isDark,
+        message:
+            'Workout history is unavailable while cloud services are offline.',
+        isLoading: _retryingCloudHistory,
+        onRetry: _retryCloudHistory,
       );
     }
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: stream,
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return _StreakStatusCard(
+            isDark: isDark,
+            message:
+                'Could not load workout history. Your streak could not be checked.',
+            isLoading: _retryingCloudHistory,
+            onRetry: _retryCloudHistory,
+          );
+        }
+        if (!snapshot.hasData) {
+          return _StreakStatusCard(
+            isDark: isDark,
+            message: 'Loading workout history…',
+            isLoading: true,
+          );
+        }
         final keys = <String>[];
-        if (snapshot.hasData) {
-          for (final doc in snapshot.data!.docs) {
-            final day = doc.data()['dayKey'];
-            if (day is String) keys.add(day);
-          }
+        for (final doc in snapshot.data!.docs) {
+          final day = doc.data()['dayKey'];
+          if (day is String) keys.add(day);
         }
         return _StreakCard(
           stats: _StreakStats.fromDayKeys(keys, _now),
@@ -573,6 +613,69 @@ class _DashboardScreenState extends State<DashboardScreen> {
           isDark: isDark,
         );
       },
+    );
+  }
+}
+
+class _StreakStatusCard extends StatelessWidget {
+  final bool isDark;
+  final String message;
+  final bool isLoading;
+  final VoidCallback? onRetry;
+
+  const _StreakStatusCard({
+    required this.isDark,
+    required this.message,
+    this.isLoading = false,
+    this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCardFilled : Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isDark ? Colors.white12 : AppColors.lightBorder,
+        ),
+      ),
+      child: Row(
+        children: [
+          if (isLoading)
+            const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            Icon(Icons.cloud_off_rounded, color: color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(message, style: TextStyle(color: color, height: 1.4)),
+                if (onRetry != null) ...[
+                  const SizedBox(height: 4),
+                  TextButton(
+                    onPressed: isLoading ? null : onRetry,
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(48, 40),
+                      padding: EdgeInsets.zero,
+                      alignment: Alignment.centerLeft,
+                    ),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'main.dart';
 import 'onboarding_tour_steps.dart';
+import 'theme_preference.dart';
 import 'terms_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -44,10 +45,10 @@ class SettingsScreen extends StatelessWidget {
                   title: const Text('Dark mode'),
                   subtitle: const Text('Choose a comfortable appearance'),
                   value: theme.brightness == Brightness.dark,
-                  onChanged: (value) {
-                    themeNotifier.value = value
-                        ? ThemeMode.dark
-                        : ThemeMode.light;
+                  onChanged: (value) async {
+                    final mode = value ? ThemeMode.dark : ThemeMode.light;
+                    themeNotifier.value = mode;
+                    await ThemePreference.save(mode);
                   },
                 ),
                 const Divider(height: 1, indent: 56),

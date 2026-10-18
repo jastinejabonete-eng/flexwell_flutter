@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+import 'firebase_status.dart';
+
 class AchievementService {
   /// Sessions with fewer reliable frames than this (~3 s at 10 fps) are
   /// ignored, so tapping Stop immediately doesn't award anything.
@@ -22,14 +24,24 @@ class AchievementService {
   /// short backoff because the initial sign-in can lose a race with Firebase
   /// init. Never throws.
   static Future<User?> _ensureUser() async {
+    if (!FirebaseStatus.isInitialized) {
+      debugPrint('FlexWell: Firebase is unavailable; cloud data is disabled.');
+      return null;
+    }
     final existing = FirebaseAuth.instance.currentUser;
     if (existing != null) return existing;
+    if (await FirebaseStatus.ensureSignedIn()) {
+      return FirebaseAuth.instance.currentUser;
+    }
     for (var attempt = 0; attempt < 3; attempt++) {
       try {
         final cred = await FirebaseAuth.instance
             .signInAnonymously()
             .timeout(_signInTimeout);
         debugPrint('FlexWell: anonymous sign-in OK (uid=${cred.user?.uid})');
+        if (cred.user != null) {
+          FirebaseStatus.authRevision.value++;
+        }
         return cred.user;
       } catch (e) {
         debugPrint('FlexWell: anonymous sign-in attempt '
@@ -43,7 +55,8 @@ class AchievementService {
   }
 
   static Future<CollectionReference<Map<String, dynamic>>?> _userCollection(
-      String name) async {
+    String name,
+  ) async {
     final user = await _ensureUser();
     if (user == null) return null;
     return FirebaseFirestore.instance
@@ -168,7 +181,9 @@ class AchievementService {
       // Per-session achievements
       await tryUnlock('first_milestone');
       if (exercise == 'Plank' && safeHold >= 60) await tryUnlock('iron_core');
-      if (exercise == 'Squat' && safeAccuracy > 90) await tryUnlock('form_master');
+      if (exercise == 'Squat' && safeAccuracy > 90) {
+        await tryUnlock('form_master');
+      }
       // Every completed rep in the session stayed flawless throughout its
       // lifecycle (CameraScreen resets `_currentRepIsFlawless` per rep and
       // only counts a rep as perfect if form never broke while it was in
