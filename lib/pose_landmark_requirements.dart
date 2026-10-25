@@ -2,6 +2,8 @@ import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 
 /// Landmarks required by both the form analyzer and the on-screen skeleton.
 class PoseLandmarkRequirements {
+  static const double minLikelihood = 0.6;
+
   static const _squat = {
     PoseLandmarkType.leftShoulder,
     PoseLandmarkType.rightShoulder,

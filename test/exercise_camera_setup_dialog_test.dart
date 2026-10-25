@@ -27,7 +27,7 @@ void main() {
       expect(find.text('Plank camera setup'), findsOneWidget);
       expect(find.text('Left side view'), findsOneWidget);
       expect(
-        find.textContaining('shoulder, elbow, hip and ankle'),
+        find.textContaining('shoulder, elbow, hip, and ankle'),
         findsOneWidget,
       );
       expect(find.text('This scan tracks your hold time.'), findsOneWidget);

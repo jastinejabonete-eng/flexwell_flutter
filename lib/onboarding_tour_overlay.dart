@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'app_colors.dart';
 import 'onboarding_tour_steps.dart';
 
 class OnboardingTourOverlay extends StatefulWidget {
@@ -316,7 +317,7 @@ class _SpotlightPainter extends CustomPainter {
     );
 
     final accent = Paint()
-      ..color = const Color(0xFFC6FF00)
+      ..color = AppColors.brandSkyBlue
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     canvas.drawRRect(
@@ -337,7 +338,7 @@ class _SpotlightPainter extends CustomPainter {
     );
     final direction = (end - start).direction;
     final line = Paint()
-      ..color = const Color(0xFFC6FF00)
+      ..color = AppColors.brandSkyBlue
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -352,7 +353,7 @@ class _SpotlightPainter extends CustomPainter {
       ..lineTo(arrowBase.dx + side.dx, arrowBase.dy + side.dy)
       ..lineTo(arrowBase.dx - side.dx, arrowBase.dy - side.dy)
       ..close();
-    canvas.drawPath(arrow, Paint()..color = const Color(0xFFC6FF00));
+    canvas.drawPath(arrow, Paint()..color = AppColors.brandSkyBlue);
   }
 
   @override

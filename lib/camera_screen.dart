@@ -16,6 +16,15 @@ import 'knn_worker.dart';
 import 'form_smoother.dart';
 import 'achievement_service.dart';
 
+const SystemUiOverlayStyle _cameraSystemUiOverlayStyle = SystemUiOverlayStyle(
+  statusBarColor: Colors.transparent,
+  statusBarIconBrightness: Brightness.light,
+  statusBarBrightness: Brightness.dark,
+  systemNavigationBarColor: Colors.black,
+  systemNavigationBarDividerColor: Colors.black,
+  systemNavigationBarIconBrightness: Brightness.light,
+);
+
 class CameraScreen extends StatefulWidget {
   final String exercise;
   const CameraScreen({super.key, required this.exercise});
@@ -23,7 +32,8 @@ class CameraScreen extends StatefulWidget {
   State<CameraScreen> createState() => _CameraScreenState();
 }
 
-class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver {
+class _CameraScreenState extends State<CameraScreen>
+    with WidgetsBindingObserver {
   CameraController? _controller;
   CameraDescription? _camera;
   // Explicit stream mode + base model (the defaults). Do NOT switch to the
@@ -41,8 +51,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   // which is what the pose model was trained on. The front camera shows a
   // mirrored selfie preview, which looks inverted to the user.
   bool _isFrontCamera = false;
-  bool get _mirrorFrontCameraPreview =>
-      Platform.isAndroid && _isFrontCamera;
+  bool get _mirrorFrontCameraPreview => Platform.isAndroid && _isFrontCamera;
   bool _isBusy = false;
   bool _isStarting = false;
   bool _isSwitching = false;
@@ -68,7 +77,12 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   // overlay and the guide bar, not the whole screen and camera preview.
   // `landmarksOk` is false when the analyzer can't judge form yet (landmarks
   // unreliable, calibrating, model missing): shown as neutral orange, not red.
-  final ValueNotifier<_OverlayState> _overlay = ValueNotifier(_OverlayState.initial);
+  final ValueNotifier<_OverlayState> _overlay = ValueNotifier(
+    _OverlayState.initial,
+  );
+  final ValueNotifier<_WorkoutProgress> _workoutProgress = ValueNotifier(
+    const _WorkoutProgress(),
+  );
   int _repCount = 0;
   bool _isInDownPhase = false;
   DateTime? _holdStart;
@@ -90,9 +104,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   // A frame only counts toward the accuracy score once the user has moved
   // meaningfully away from the resting/idle position.
   // ---------------------------------------------------------------------
-  static const double _lungeEngageThreshold = 150; 
-  static const double _pullUpEngageThreshold = -0.12; 
-  static const double _defaultEngageThreshold = 0.12; 
+  static const double _lungeEngageThreshold = 150;
+  static const double _pullUpEngageThreshold = -0.12;
+  static const double _defaultEngageThreshold = 0.12;
 
   int _totalFrames = 0;
   int _correctFrames = 0;
@@ -120,7 +134,8 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   // ML Kit + KNN consistently overrun the frame budget, the busy gate drops
   // frames anyway, so raise the interval to rebuild the overlay at a rate the
   // device can actually sustain, and lower it again when processing is fast.
-  int _processEveryNthFrame = _minFrameSkip; // starts at 2; re-adapts per device
+  int _processEveryNthFrame =
+      _minFrameSkip; // starts at 2; re-adapts per device
   // Floor of 2 (was 3): at 30fps a skip of 3 costs ~100ms of latency, but the
   // adaptive logic below can still raise this up to _maxFrameSkip when the
   // device is over budget. Frame rate doesn't change what gets classified,
@@ -137,8 +152,12 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
 
   // Odd window: a full window can't tie. Incorrect is shown only when strictly
   // more than half of the last 5 frames were incorrect.
-  final FormSmoother _displaySmoother = FormSmoother(windowSize: 5, minFrames: 3);
+  final FormSmoother _displaySmoother = FormSmoother(
+    windowSize: 5,
+    minFrames: 3,
+  );
   int _missedFrames = 0;
+  int _invalidImageStreak = 0;
   static const int _maxMissedFrames = 5;
 
   // Dropout hold: how many consecutive low-confidence frames to keep showing
@@ -173,14 +192,23 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     _knnReady = false;
     final knnFuture = _loadKnnModel();
 
-    await KnnWorker.instance.acquire(); // never throws; falls back to main isolate
+    await KnnWorker.instance
+        .acquire(); // never throws; falls back to main isolate
 
-    final status = await Permission.camera.request();
+    PermissionStatus status;
+    try {
+      status = await Permission.camera.request();
+    } catch (e, st) {
+      debugPrint('Camera permission request failed: $e\n$st');
+      _fail('Could not check camera permission. Please try again.');
+      return;
+    }
     if (!status.isGranted) {
       if (!mounted) return;
       setState(() {
         _permissionPermanentlyDenied = status.isPermanentlyDenied;
-        _errorMessage = 'Camera permission is required to analyze your posture.';
+        _errorMessage =
+            'Camera permission is required to analyze your posture.';
       });
       return;
     }
@@ -199,7 +227,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
       setState(() => _knnReady = true);
     } catch (e, st) {
       debugPrint('Failed to load KNN model: $e\n$st');
-      _fail('Could not load the posture model. Please update or reinstall the app.');
+      _fail(
+        'Could not load the posture model. Please update or reinstall the app.',
+      );
     }
   }
 
@@ -211,12 +241,14 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     _avgProcessMs = _frameBudgetMs;
     _skipCheckCountdown = _skipCheckEvery;
     _missedFrames = 0;
+    _invalidImageStreak = 0;
     _unreliableStreak = 0;
     _lastGoodPose = null;
     _isInDownPhase = false;
     _holdStart = null;
     _holdInterruptedAt = null;
     _currentRepIsFlawless = true;
+    _publishWorkoutProgress();
     if (mounted) _overlay.value = _OverlayState.initial;
   }
 
@@ -230,10 +262,14 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     }
     try {
       if (old.value.isStreamingImages) await old.stopImageStream();
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('Failed to stop camera stream: $e\n$st');
+    }
     try {
       await old.dispose();
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('Failed to dispose camera: $e\n$st');
+    }
   }
 
   Future<void> _startCamera() async {
@@ -246,7 +282,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
         _fail('No camera was found on this device.');
         return;
       }
-      final wanted = _isFrontCamera ? CameraLensDirection.front : CameraLensDirection.back;
+      final wanted = _isFrontCamera
+          ? CameraLensDirection.front
+          : CameraLensDirection.back;
       final camera = cameras.firstWhere(
         (c) => c.lensDirection == wanted,
         orElse: () => cameras.first,
@@ -261,7 +299,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
         camera,
         _resolution,
         enableAudio: false,
-        imageFormatGroup: Platform.isAndroid ? ImageFormatGroup.nv21 : ImageFormatGroup.bgra8888,
+        imageFormatGroup: Platform.isAndroid
+            ? ImageFormatGroup.nv21
+            : ImageFormatGroup.bgra8888,
       );
       await controller.initialize();
       if (!mounted || _isEnding) {
@@ -298,7 +338,8 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (_isEnding) return;
-    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
       _releaseCamera();
     } else if (state == AppLifecycleState.resumed &&
         _controller == null &&
@@ -328,6 +369,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     _holdStart ??= DateTime.now();
     final elapsed = DateTime.now().difference(_holdStart!).inSeconds;
     if (elapsed > _longestHold) _longestHold = elapsed;
+    _publishWorkoutProgress();
   }
 
   void _registerHoldInterruption() {
@@ -336,6 +378,20 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     if (DateTime.now().difference(_holdInterruptedAt!) > _holdGracePeriod) {
       _holdStart = null;
       _holdInterruptedAt = null;
+      _publishWorkoutProgress();
+    }
+  }
+
+  void _publishWorkoutProgress() {
+    final next = _WorkoutProgress(
+      reps: _repCount,
+      holdSeconds: _holdStart == null
+          ? 0
+          : DateTime.now().difference(_holdStart!).inSeconds,
+    );
+    final current = _workoutProgress.value;
+    if (next.reps != current.reps || next.holdSeconds != current.holdSeconds) {
+      _workoutProgress.value = next;
     }
   }
 
@@ -349,11 +405,27 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
 
     try {
       final inputImage = _inputImageFromCameraImage(image);
-      if (inputImage == null) return;
+      if (inputImage == null) {
+        _invalidImageStreak++;
+        if (_invalidImageStreak >= _maxMissedFrames) {
+          final previous = _overlay.value;
+          _overlay.value = _OverlayState(
+            pose: null,
+            imageSize: previous.imageSize,
+            isCorrect: previous.isCorrect,
+            landmarksOk: false,
+            showNeutral: true,
+            guideText: 'Camera feed unavailable - restart the camera',
+          );
+        }
+        return;
+      }
+      _invalidImageStreak = 0;
 
       final rotation = inputImage.metadata!.rotation;
       final rotatedIsSideways =
-          rotation == InputImageRotation.rotation90deg || rotation == InputImageRotation.rotation270deg;
+          rotation == InputImageRotation.rotation90deg ||
+          rotation == InputImageRotation.rotation270deg;
       final displaySize = rotatedIsSideways
           ? Size(image.height.toDouble(), image.width.toDouble())
           : Size(image.width.toDouble(), image.height.toDouble());
@@ -389,15 +461,22 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
         }
 
         final analysis = await _poseAnalyzer.analyze(widget.exercise, pose);
-        if (!mounted || _isEnding) return; // state may have changed during the await
+        if (!mounted || _isEnding) {
+          return; // State may have changed during the await.
+        }
 
         if (kDebugMode) {
-          debugPrint('[perf] mlkit=${mlMs}ms total=${sw.elapsedMilliseconds}ms');
+          debugPrint(
+            '[perf] mlkit=${mlMs}ms total=${sw.elapsedMilliseconds}ms',
+          );
         }
 
         if (analysis.landmarksReliable) {
           if (PoseAnalyzer.repBasedExercises.contains(widget.exercise)) {
-            final engaged = _isEngagedInMovement(widget.exercise, analysis.repSignal);
+            final engaged = _isEngagedInMovement(
+              widget.exercise,
+              analysis.repSignal,
+            );
 
             if (engaged) {
               _totalFrames++;
@@ -412,7 +491,8 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
               if (analysis.repSignal <= _lungeDownThreshold) {
                 if (!_isInDownPhase) _currentRepIsFlawless = true;
                 _isInDownPhase = true;
-              } else if (analysis.repSignal >= _lungeUpThreshold && _isInDownPhase) {
+              } else if (analysis.repSignal >= _lungeUpThreshold &&
+                  _isInDownPhase) {
                 _repCount++;
                 if (_currentRepIsFlawless) _perfectRepCount++;
                 _isInDownPhase = false;
@@ -421,7 +501,8 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
               if (analysis.repSignal <= _pullUpDownThreshold) {
                 if (!_isInDownPhase) _currentRepIsFlawless = true;
                 _isInDownPhase = true;
-              } else if (analysis.repSignal >= _pullUpUpThreshold && _isInDownPhase) {
+              } else if (analysis.repSignal >= _pullUpUpThreshold &&
+                  _isInDownPhase) {
                 _repCount++;
                 if (_currentRepIsFlawless) _perfectRepCount++;
                 _isInDownPhase = false;
@@ -430,12 +511,14 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
               if (analysis.repSignal >= _defaultDownThreshold) {
                 if (!_isInDownPhase) _currentRepIsFlawless = true;
                 _isInDownPhase = true;
-              } else if (analysis.repSignal <= _defaultUpThreshold && _isInDownPhase) {
+              } else if (analysis.repSignal <= _defaultUpThreshold &&
+                  _isInDownPhase) {
                 _repCount++;
                 if (_currentRepIsFlawless) _perfectRepCount++;
                 _isInDownPhase = false;
               }
             }
+            _publishWorkoutProgress();
           } else {
             _totalFrames++;
             if (analysis.isCorrect) {
@@ -457,7 +540,8 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
         if (analysis.landmarksReliable) {
           isCorrect = PoseAnalyzer.frontBackExercises.contains(widget.exercise)
               ? _displaySmoother.add(analysis.isCorrect)
-              : analysis.isCorrect; // Lunge/Plank are already smoothed in the analyzer
+              : analysis
+                    .isCorrect; // Lunge/Plank are already smoothed in the analyzer
         }
         // Sticky reliability: once the skeleton is showing, keep showing it even
         // if confidence momentarily dips. Only drop out when it stays below the
@@ -502,6 +586,20 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
       }
     } catch (e, st) {
       debugPrint('Error processing image: $e\n$st');
+      _registerHoldInterruption();
+      _missedFrames = 0;
+      _unreliableStreak = _poseHoldFrames;
+      _lastGoodPose = null;
+      _displaySmoother.reset();
+      final previous = _overlay.value;
+      _overlay.value = _OverlayState(
+        pose: null,
+        imageSize: previous.imageSize,
+        isCorrect: previous.isCorrect,
+        landmarksOk: false,
+        showNeutral: true,
+        guideText: 'Tracking paused - reposition and try again',
+      );
     } finally {
       _isBusy = false;
       _updateFrameSkip(sw.elapsedMilliseconds.toDouble());
@@ -529,8 +627,10 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     if (_processEveryNthFrame != previous) {
       _frameCounter = 0; // realign the modulo window to the new interval
       if (kDebugMode) {
-        debugPrint('[perf] frame skip $previous->$_processEveryNthFrame '
-            '(avg ${_avgProcessMs.toStringAsFixed(0)}ms)');
+        debugPrint(
+          '[perf] frame skip $previous->$_processEveryNthFrame '
+          '(avg ${_avgProcessMs.toStringAsFixed(0)}ms)',
+        );
       }
     }
   }
@@ -545,12 +645,14 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     if (Platform.isIOS) {
       rotation = InputImageRotationValue.fromRawValue(sensorOrientation);
     } else if (Platform.isAndroid) {
-      var rotationCompensation = _orientations[controller.value.deviceOrientation];
+      var rotationCompensation =
+          _orientations[controller.value.deviceOrientation];
       if (rotationCompensation == null) return null;
       if (camera.lensDirection == CameraLensDirection.front) {
         rotationCompensation = (sensorOrientation + rotationCompensation) % 360;
       } else {
-        rotationCompensation = (sensorOrientation - rotationCompensation + 360) % 360;
+        rotationCompensation =
+            (sensorOrientation - rotationCompensation + 360) % 360;
       }
       rotation = InputImageRotationValue.fromRawValue(rotationCompensation);
     }
@@ -580,21 +682,30 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   Future<void> _endSession() async {
     if (_isEnding) return;
     _isEnding = true;
+    final warnings = <String>[];
 
     final controller = _controller;
     try {
       if (controller != null && controller.value.isStreamingImages) {
         await controller.stopImageStream();
       }
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('Failed to stop camera stream at session end: $e\n$st');
+      warnings.add('Some final camera frames may be missing.');
+    }
 
     // Judge any rep still in progress so stopping mid-rep (or at the bottom of
     // a squat) is still scored instead of silently dropped.
     try {
       await _poseAnalyzer.finalizeRep(widget.exercise);
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('Failed to score the unfinished rep: $e\n$st');
+      warnings.add('The unfinished rep could not be scored.');
+    }
 
-    final accuracy = _totalFrames > 0 ? (_correctFrames * 100 / _totalFrames).round() : 0;
+    final accuracy = _totalFrames > 0
+        ? (_correctFrames * 100 / _totalFrames).round()
+        : 0;
 
     // Save the session and evaluate achievements. Awaiting here (rather than
     // fire-and-forget) gives us the list of newly-unlocked badge ids to hand
@@ -622,11 +733,13 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
           isRepBased: PoseAnalyzer.repBasedExercises.contains(widget.exercise),
           perfectReps: _perfectRepCount,
           unlockedAchievements: unlocked,
+          hasSufficientData:
+              _totalFrames >= AchievementService.minReliableFrames,
+          warningMessage: warnings.isEmpty ? null : warnings.join(' '),
         ),
       ),
     );
   }
-
 
   @override
   void dispose() {
@@ -634,6 +747,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     _controller?.dispose();
     _poseDetector.close();
     _overlay.dispose();
+    _workoutProgress.dispose();
     KnnWorker.instance.release();
     super.dispose();
   }
@@ -648,18 +762,26 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.videocam_off_rounded, color: Colors.white70, size: 56),
+                const Icon(
+                  Icons.videocam_off_rounded,
+                  color: Colors.white70,
+                  size: 56,
+                ),
                 const SizedBox(height: 20),
                 Text(
                   _errorMessage!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 if (_permissionPermanentlyDenied)
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accent,
+                      backgroundColor: AppColors.brandSkyBlue,
                       foregroundColor: Colors.black,
                     ),
                     onPressed: openAppSettings,
@@ -668,7 +790,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
                 else
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accent,
+                      backgroundColor: AppColors.brandSkyBlue,
                       foregroundColor: Colors.black,
                     ),
                     onPressed: _retry,
@@ -677,7 +799,10 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: () => Navigator.maybePop(context),
-                  child: const Text('Go back', style: TextStyle(color: Colors.white70)),
+                  child: const Text(
+                    'Go back',
+                    style: TextStyle(color: Colors.white70),
+                  ),
                 ),
               ],
             ),
@@ -689,167 +814,227 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
 
   @override
   Widget build(BuildContext context) {
-    if (_errorMessage != null) return _buildErrorScaffold();
-
-    final controller = _controller;
-    if (controller == null || !controller.value.isInitialized) {
-      return const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(child: CircularProgressIndicator(color: AppColors.accent)),
+    if (_errorMessage != null) {
+      return AnnotatedRegion<SystemUiOverlayStyle>(
+        value: _cameraSystemUiOverlayStyle,
+        child: _buildErrorScaffold(),
       );
     }
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final screenSize = constraints.biggest;
-              final previewAspectRatio = 1 / controller.value.aspectRatio;
-
-              var scale = screenSize.aspectRatio / previewAspectRatio;
-              if (scale < 1) scale = 1 / scale;
-
-              final Widget preview = Center(
-                child: AspectRatio(
-                  aspectRatio: previewAspectRatio,
-                  child: CameraPreview(controller),
-                ),
-              );
-              final alignedPreview = Transform.scale(
-                scaleX: _mirrorFrontCameraPreview ? -1 : 1,
-                child: preview,
-              );
-
-              // RepaintBoundary keeps the preview on its own layer so the
-              // skeleton repainting never forces the preview to repaint.
-              return RepaintBoundary(
-                child: ClipRect(
-                  child: Transform.scale(
-                    scale: scale,
-                    child: alignedPreview,
-                  ),
-                ),
-              );
-            },
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) {
+      return const AnnotatedRegion<SystemUiOverlayStyle>(
+        value: _cameraSystemUiOverlayStyle,
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          body: Center(
+            child: CircularProgressIndicator(color: AppColors.brandSkyBlue),
           ),
-          RepaintBoundary(
-            child: ValueListenableBuilder<_OverlayState>(
-              valueListenable: _overlay,
-              builder: (context, o, _) => CustomPaint(
-                painter: PosePainter(
-                  // Draw the skeleton whenever we have a good pose. It turns
-                  // orange (isNeutral) while calibrating / unreliable / not in
-                  // the start position, so the user always sees their body.
-                  pose: o.landmarksOk ? o.pose : null,
-                  isCorrect: o.isCorrect,
-                  isNeutral: !o.landmarksOk || o.showNeutral,
-                  imageSize: o.imageSize,
-                  // Must match the preview's aspect ratio exactly, or the
-                  // skeleton is scaled into the wrong box and drifts off-body.
-                  previewAspectRatio: controller.value.aspectRatio,
-                  isFrontCamera: _mirrorFrontCameraPreview,
-                  hideLowerBody: PosePainter.hidesLowerBody(widget.exercise),
-                  requiredLandmarks: PosePainter.requiredFor(widget.exercise),
+        ),
+      );
+    }
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: _cameraSystemUiOverlayStyle,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final screenSize = constraints.biggest;
+                final previewAspectRatio = 1 / controller.value.aspectRatio;
+
+                var scale = screenSize.aspectRatio / previewAspectRatio;
+                if (scale < 1) scale = 1 / scale;
+
+                final Widget preview = Center(
+                  child: AspectRatio(
+                    aspectRatio: previewAspectRatio,
+                    child: CameraPreview(controller),
+                  ),
+                );
+                final alignedPreview = Transform.scale(
+                  scaleX: _mirrorFrontCameraPreview ? -1 : 1,
+                  child: preview,
+                );
+
+                // RepaintBoundary keeps the preview on its own layer so the
+                // skeleton repainting never forces the preview to repaint.
+                return RepaintBoundary(
+                  child: ClipRect(
+                    child: Transform.scale(scale: scale, child: alignedPreview),
+                  ),
+                );
+              },
+            ),
+            RepaintBoundary(
+              child: ValueListenableBuilder<_OverlayState>(
+                valueListenable: _overlay,
+                builder: (context, o, _) => CustomPaint(
+                  painter: PosePainter(
+                    // Draw the skeleton whenever we have a good pose. It turns
+                    // orange (isNeutral) while calibrating / unreliable / not in
+                    // the start position, so the user always sees their body.
+                    pose: o.landmarksOk ? o.pose : null,
+                    isCorrect: o.isCorrect,
+                    isNeutral: !o.landmarksOk || o.showNeutral,
+                    imageSize: o.imageSize,
+                    // Must match the preview's aspect ratio exactly, or the
+                    // skeleton is scaled into the wrong box and drifts off-body.
+                    previewAspectRatio: controller.value.aspectRatio,
+                    isFrontCamera: _mirrorFrontCameraPreview,
+                    hideLowerBody: PosePainter.hidesLowerBody(widget.exercise),
+                    requiredLandmarks: PosePainter.requiredFor(widget.exercise),
+                  ),
+                  child: const SizedBox.expand(),
                 ),
-                child: const SizedBox.expand(),
               ),
             ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _glassContainer(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.fitness_center_rounded, color: Colors.white, size: 18),
-                            const SizedBox(width: 8),
-                            Text(
-                              widget.exercise,
-                              style: const TextStyle(
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _glassContainer(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.fitness_center_rounded,
                                 color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                widget.exercise,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            _circularButton(
+                              icon: Icons.cameraswitch_rounded,
+                              tooltip: 'Switch camera',
+                              onPressed: _switchCamera,
+                            ),
+                            const SizedBox(width: 8),
+                            _circularButton(
+                              icon: Icons.stop_rounded,
+                              tooltip: 'End workout',
+                              color: AppColors.incorrect,
+                              onPressed: _endSession,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: ValueListenableBuilder<_WorkoutProgress>(
+                        valueListenable: _workoutProgress,
+                        builder: (context, progress, _) {
+                          final isRepBased = PoseAnalyzer.repBasedExercises
+                              .contains(widget.exercise);
+                          return _glassContainer(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isRepBased
+                                      ? Icons.repeat_rounded
+                                      : Icons.timer_outlined,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  isRepBased
+                                      ? '${progress.reps} reps'
+                                      : 'Hold ${progress.holdSeconds}s',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const Spacer(),
+                    ValueListenableBuilder<_OverlayState>(
+                      valueListenable: _overlay,
+                      builder: (context, o, _) => _glassContainer(
+                        width: double.infinity,
+                        backgroundColor: o.pose == null
+                            ? Colors.black.withValues(alpha: 0.65)
+                            : (!o.landmarksOk || o.showNeutral
+                                  ? Colors.orange.shade800.withValues(
+                                      alpha: 0.85,
+                                    )
+                                  : o.isCorrect
+                                  ? AppColors.correct.withValues(alpha: 0.85)
+                                  : AppColors.incorrect.withValues(
+                                      alpha: 0.85,
+                                    )),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              o.pose == null
+                                  ? Icons.person_search_rounded
+                                  : (!o.landmarksOk || o.showNeutral
+                                        ? Icons.info_outline_rounded
+                                        : (o.isCorrect
+                                              ? Icons.check_circle_rounded
+                                              : Icons.warning_rounded)),
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 10),
+                            Flexible(
+                              child: Text(
+                                o.guideText,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      Row(
-                        children: [
-                          _circularButton(
-                            icon: Icons.cameraswitch_rounded,
-                            tooltip: 'Switch camera',
-                            onPressed: _switchCamera,
-                          ),
-                          const SizedBox(width: 8),
-                          _circularButton(
-                            icon: Icons.stop_rounded,
-                            tooltip: 'End workout',
-                            color: AppColors.incorrect,
-                            onPressed: _endSession,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  ValueListenableBuilder<_OverlayState>(
-                    valueListenable: _overlay,
-                    builder: (context, o, _) => _glassContainer(
-                      width: double.infinity,
-                      backgroundColor: o.pose == null
-                          ? Colors.black.withValues(alpha: 0.65)
-                          : (!o.landmarksOk || o.showNeutral
-                              ? Colors.orange.shade800.withValues(alpha: 0.85)
-                              : o.isCorrect
-                              ? AppColors.correct.withValues(alpha: 0.85)
-                              : AppColors.incorrect.withValues(alpha: 0.85)),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            o.pose == null
-                                ? Icons.person_search_rounded
-                                : (!o.landmarksOk || o.showNeutral
-                                    ? Icons.info_outline_rounded
-                                    : (o.isCorrect ? Icons.check_circle_rounded : Icons.warning_rounded)),
-                            color: Colors.white,
-                          ),
-                          const SizedBox(width: 10),
-                          Flexible(
-                            child: Text(
-                              o.guideText,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _glassContainer({required Widget child, double? width, Color? backgroundColor}) {
+  Widget _glassContainer({
+    required Widget child,
+    double? width,
+    Color? backgroundColor,
+  }) {
     return Container(
       width: width,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -869,7 +1054,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     required IconData icon,
     required String tooltip,
     required VoidCallback onPressed,
-    Color color = AppColors.primary,
+    Color color = AppColors.brandBlue,
   }) {
     return Material(
       color: color,
@@ -884,6 +1069,13 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
       ),
     );
   }
+}
+
+class _WorkoutProgress {
+  final int reps;
+  final int holdSeconds;
+
+  const _WorkoutProgress({this.reps = 0, this.holdSeconds = 0});
 }
 
 /// Immutable snapshot of everything drawn on top of the camera preview.
@@ -941,6 +1133,12 @@ class _OverlayState {
           imageSize == other.imageSize;
 
   @override
-  int get hashCode =>
-      Object.hash(pose, isCorrect, landmarksOk, guideText, showNeutral, imageSize);
+  int get hashCode => Object.hash(
+    pose,
+    isCorrect,
+    landmarksOk,
+    guideText,
+    showNeutral,
+    imageSize,
+  );
 }

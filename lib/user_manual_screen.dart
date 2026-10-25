@@ -66,6 +66,7 @@ class _Tone {
   final Color card;
   final Color border;
   final Color accent;
+  final Color accentBorder;
 
   _Tone(ThemeData theme)
     : isDark = theme.brightness == Brightness.dark,
@@ -73,7 +74,10 @@ class _Tone {
       sub = theme.colorScheme.onSurfaceVariant,
       card = theme.colorScheme.surface,
       border = theme.colorScheme.outlineVariant,
-      accent = theme.colorScheme.primary;
+      accent = theme.colorScheme.primary,
+      accentBorder = AppColors.accentBorderFor(
+        theme.brightness == Brightness.dark,
+      );
 }
 
 // -----------------------------------------------------------------------------
@@ -99,9 +103,7 @@ class _UserManualScreenState extends State<UserManualScreen> {
       backgroundColor: t.isDark
           ? AppColors.darkBackground
           : AppColors.lightBackground,
-      appBar: AppBar(
-        title: const Text('User manual'),
-      ),
+      appBar: AppBar(title: const Text('User manual')),
       body: ListView(
         padding: const EdgeInsets.only(
           left: 20,
@@ -234,15 +236,17 @@ class _UserManualScreenState extends State<UserManualScreen> {
       showCheckmark: false,
       materialTapTargetSize: MaterialTapTargetSize.padded,
       labelStyle: TextStyle(
-        color: selected ? Colors.black : t.text,
+        color: selected
+            ? (t.isDark ? AppColors.darkBackground : Colors.white)
+            : t.text,
         fontWeight: selected ? FontWeight.bold : FontWeight.w500,
         fontSize: 13,
       ),
       backgroundColor: t.isDark
-          ? const Color(0xFF2A303A)
-          : const Color(0xFFF1F5F9),
-      selectedColor: AppColors.accent,
-      side: BorderSide(color: selected ? AppColors.accent : t.border),
+          ? AppColors.darkCardFilled
+          : AppColors.lightRaised,
+      selectedColor: t.accent,
+      side: BorderSide(color: selected ? t.accentBorder : t.border),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     );
   }
@@ -257,7 +261,7 @@ class _UserManualScreenState extends State<UserManualScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: t.accent),
+          Icon(icon, size: 14, color: AppColors.brandSkyBlue),
           const SizedBox(width: 6),
           Text(
             label,
@@ -280,14 +284,10 @@ class _UserManualScreenState extends State<UserManualScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: t.isDark
-              ? [AppColors.darkCardFilled, AppColors.darkBackground]
-              : [const Color(0xFF0D47A1), const Color(0xFF1976D2)],
-        ),
+        color: t.isDark ? AppColors.darkCardFilled : AppColors.brandBlue,
         borderRadius: BorderRadius.circular(20),
         border: t.isDark
-            ? Border.all(color: AppColors.accent.withValues(alpha: 0.25))
+            ? Border.all(color: AppColors.brandSkyBlue.withValues(alpha: 0.25))
             : null,
       ),
       child: Column(
@@ -298,12 +298,12 @@ class _UserManualScreenState extends State<UserManualScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.2),
+                  color: AppColors.brandSkyBlue.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.menu_book_rounded,
-                  color: AppColors.accent,
+                  color: AppColors.brandSkyBlue,
                   size: 28,
                 ),
               ),
@@ -354,7 +354,7 @@ class _UserManualScreenState extends State<UserManualScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppColors.accent),
+          Icon(icon, size: 14, color: AppColors.brandSkyBlue),
           const SizedBox(width: 6),
           Text(
             label,
@@ -385,14 +385,16 @@ class _UserManualScreenState extends State<UserManualScreen> {
                         width: 28,
                         height: 28,
                         alignment: Alignment.center,
-                        decoration: const BoxDecoration(
-                          color: AppColors.accent,
+                        decoration: BoxDecoration(
+                          color: t.accent,
                           shape: BoxShape.circle,
                         ),
                         child: Text(
                           '${i + 1}',
-                          style: const TextStyle(
-                            color: Colors.black,
+                          style: TextStyle(
+                            color: t.isDark
+                                ? AppColors.darkBackground
+                                : Colors.white,
                             fontWeight: FontWeight.w900,
                             fontSize: 13,
                           ),

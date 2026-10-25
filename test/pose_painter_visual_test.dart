@@ -22,6 +22,7 @@ const kOrange = Color(0xFFFFA500); // Colors.orange
 Pose buildPose(
   Map<PoseLandmarkType, List<double>> pts, {
   Set<PoseLandmarkType> lowConfidence = const {},
+  Map<PoseLandmarkType, double> likelihoods = const {},
 }) {
   final landmarks = <PoseLandmarkType, PoseLandmark>{};
   pts.forEach((type, xy) {
@@ -30,7 +31,8 @@ Pose buildPose(
       x: xy[0],
       y: xy[1],
       z: 0.0,
-      likelihood: lowConfidence.contains(type) ? 0.2 : 0.95,
+      likelihood:
+          likelihoods[type] ?? (lowConfidence.contains(type) ? 0.2 : 0.95),
     );
   });
   return Pose(landmarks: landmarks);
@@ -151,6 +153,36 @@ void main() {
     expect(red, greaterThan(0), reason: 'incorrect form must draw red joints');
   });
 
+  test('painter uses the analyzer likelihood cutoff', () async {
+    final atCutoff = await render(
+      PosePainter(
+        pose: buildPose(
+          fullBody,
+          likelihoods: {PoseLandmarkType.leftKnee: 0.6},
+        ),
+        isCorrect: true,
+        imageSize: const Size(480, 640),
+        requiredLandmarks: PosePainter.requiredFor('Squat'),
+      ),
+      size,
+    );
+    final belowCutoff = await render(
+      PosePainter(
+        pose: buildPose(
+          fullBody,
+          likelihoods: {PoseLandmarkType.leftKnee: 0.59},
+        ),
+        isCorrect: true,
+        imageSize: const Size(480, 640),
+        requiredLandmarks: PosePainter.requiredFor('Squat'),
+      ),
+      size,
+    );
+
+    expect(await countColour(atCutoff, kGreen), greaterThan(0));
+    expect(await countColour(belowCutoff, kGreen), 0);
+  });
+
   test('neutral (cannot judge) draws ORANGE, never red or green', () async {
     final img = await render(
       PosePainter(
@@ -207,37 +239,40 @@ void main() {
     );
   });
 
-  test('explicitly mirrored preview gets a mirrored skeleton overlay', () async {
-    final singleJoint = buildPose({
-      PoseLandmarkType.leftShoulder: [200, 200],
-    });
-    final unmirrored = await render(
-      PosePainter(
-        pose: singleJoint,
-        isCorrect: true,
-        imageSize: const Size(480, 640),
-      ),
-      size,
-    );
-    final mirrored = await render(
-      PosePainter(
-        pose: singleJoint,
-        isCorrect: true,
-        imageSize: const Size(480, 640),
-        isFrontCamera: true,
-      ),
-      size,
-    );
+  test(
+    'explicitly mirrored preview gets a mirrored skeleton overlay',
+    () async {
+      final singleJoint = buildPose({
+        PoseLandmarkType.leftShoulder: [200, 200],
+      });
+      final unmirrored = await render(
+        PosePainter(
+          pose: singleJoint,
+          isCorrect: true,
+          imageSize: const Size(480, 640),
+        ),
+        size,
+      );
+      final mirrored = await render(
+        PosePainter(
+          pose: singleJoint,
+          isCorrect: true,
+          imageSize: const Size(480, 640),
+          isFrontCamera: true,
+        ),
+        size,
+      );
 
-    expect(
-      await hasColourNear(unmirrored, kGreen, const Offset(169, 200)),
-      isTrue,
-    );
-    expect(
-      await hasColourNear(mirrored, kGreen, const Offset(311, 200)),
-      isTrue,
-    );
-  });
+      expect(
+        await hasColourNear(unmirrored, kGreen, const Offset(169, 200)),
+        isTrue,
+      );
+      expect(
+        await hasColourNear(mirrored, kGreen, const Offset(311, 200)),
+        isTrue,
+      );
+    },
+  );
 
   test(
     'low-confidence optional landmarks draw neither joint nor bones',

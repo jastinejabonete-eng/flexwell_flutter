@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'app_colors.dart';
 import 'firebase_status.dart';
 import 'main_navigation_screen.dart';
@@ -9,27 +10,48 @@ import 'terms_screen.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.dark);
 
+SystemUiOverlayStyle _systemUiOverlayStyle(Brightness brightness) {
+  final isDark = brightness == Brightness.dark;
+  final systemBarColor = isDark
+      ? AppColors.darkSurface
+      : AppColors.lightSurface;
+  return SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+    statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+    systemNavigationBarColor: systemBarColor,
+    systemNavigationBarDividerColor: systemBarColor,
+    systemNavigationBarIconBrightness: isDark
+        ? Brightness.light
+        : Brightness.dark,
+  );
+}
+
 ThemeData _buildTheme(Brightness brightness) {
   final isDark = brightness == Brightness.dark;
-  final foreground = isDark ? Colors.white : AppColors.lightText;
-  final secondary = isDark ? AppColors.primaryLight : AppColors.accentText;
+  final foreground = AppColors.textFor(isDark);
+  final secondary = isDark ? AppColors.brandSkyBlue : AppColors.brandBlue;
   final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
   final outline = isDark ? AppColors.darkBorder : AppColors.lightBorder;
-  final scheme = ColorScheme.fromSeed(
-    seedColor: isDark ? AppColors.accent : AppColors.primary,
-    brightness: brightness,
-    primary: isDark ? AppColors.accent : AppColors.primary,
-    onPrimary: isDark ? Colors.black : Colors.white,
-    secondary: secondary,
-    onSecondary: Colors.white,
-    surface: surface,
-    onSurface: foreground,
-    error: AppColors.incorrect,
-  ).copyWith(outline: outline);
+  final primary = AppColors.accentFor(isDark);
+  final scheme =
+      ColorScheme.fromSeed(
+        seedColor: primary,
+        brightness: brightness,
+        primary: primary,
+        onPrimary: AppColors.onAccentFor(isDark),
+        secondary: secondary,
+        onSecondary: AppColors.onAccentFor(isDark),
+        surface: surface,
+        onSurface: foreground,
+        error: AppColors.incorrect,
+      ).copyWith(
+        outline: outline,
+        outlineVariant: outline,
+        onSurfaceVariant: AppColors.secondaryTextFor(isDark),
+      );
 
-  final shape = RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(14),
-  );
+  final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(14));
   final buttonStyle = ButtonStyle(
     minimumSize: const WidgetStatePropertyAll(Size(64, 48)),
     padding: const WidgetStatePropertyAll(
@@ -55,6 +77,7 @@ ThemeData _buildTheme(Brightness brightness) {
       elevation: 0,
       centerTitle: false,
       foregroundColor: foreground,
+      systemOverlayStyle: _systemUiOverlayStyle(brightness),
       titleTextStyle: TextStyle(
         color: foreground,
         fontSize: 20,
@@ -72,11 +95,8 @@ ThemeData _buildTheme(Brightness brightness) {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: isDark ? AppColors.darkCardFilled : AppColors.lightSurface,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 14,
-      ),
+      fillColor: isDark ? AppColors.darkCardFilled : AppColors.lightRaised,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide(color: outline),
@@ -92,14 +112,14 @@ ThemeData _buildTheme(Brightness brightness) {
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: buttonStyle.copyWith(
-        backgroundColor: WidgetStatePropertyAll(AppColors.accent),
-        foregroundColor: const WidgetStatePropertyAll(Colors.black),
+        backgroundColor: WidgetStatePropertyAll(scheme.primary),
+        foregroundColor: WidgetStatePropertyAll(scheme.onPrimary),
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: buttonStyle.copyWith(
-        backgroundColor: WidgetStatePropertyAll(AppColors.accent),
-        foregroundColor: const WidgetStatePropertyAll(Colors.black),
+        backgroundColor: WidgetStatePropertyAll(scheme.primary),
+        foregroundColor: WidgetStatePropertyAll(scheme.onPrimary),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -132,7 +152,7 @@ ThemeData _buildTheme(Brightness brightness) {
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      backgroundColor: isDark ? AppColors.darkCard : const Color(0xFF263238),
+      backgroundColor: isDark ? AppColors.darkCard : AppColors.lightText,
       contentTextStyle: const TextStyle(color: Colors.white),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
     ),
@@ -185,10 +205,20 @@ class FlexWellApp extends StatelessWidget {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (context, currentTheme, child) {
+        final brightness = currentTheme == ThemeMode.system
+            ? WidgetsBinding.instance.platformDispatcher.platformBrightness
+            : currentTheme == ThemeMode.dark
+            ? Brightness.dark
+            : Brightness.light;
         return MaterialApp(
           title: 'FlexWell',
           debugShowCheckedModeBanner: false,
           themeMode: currentTheme,
+          builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+            key: const ValueKey('system_ui_overlay'),
+            value: _systemUiOverlayStyle(brightness),
+            child: child ?? const SizedBox.shrink(),
+          ),
           // Defaults to Duration.zero, which is why the light/dark toggle
           // snapped instantly and janked (all the heavy dark-mode box-shadows
           // rebuild in a single frame). A short duration cross-fades the whole

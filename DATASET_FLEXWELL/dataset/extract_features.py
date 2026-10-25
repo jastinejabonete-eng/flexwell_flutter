@@ -285,19 +285,22 @@ def feature_2_value(exercise, lm):
     """The second (non-displacement) feature for front/back exercises.
 
     Squat keeps its torso-lean angle. Push-Up uses elbow bend angle
-    (shoulder-elbow-wrist, averaged left/right). Pull-Up has NO second feature:
-    the elbow/shoulder spread ratio measured 0.35 sigma separation and AUC
-    0.587 (barely above chance), and removing it raised grouped-CV accuracy
-    from 70.3% to 73.5%. Every frame-local replacement candidate was either
-    weaker or label-inverting (pl_elbow_asym: AUC 0.211), so Pull-Up is
-    exported 1-D. Keep this in sync with _classifierFeatures in
-    lib/pose_analyzer.dart.
+    (shoulder-elbow-wrist, averaged left/right). Pull-Up uses average
+    elbow angle (shoulder-elbow-wrist, averaged left/right) as its second
+    feature. This provides a 2-D feature vector [vertical_displacement,
+    elbow_angle] which improves class separation over 1-D displacement alone.
+    Keep this in sync with _classifierFeatures in lib/pose_analyzer.dart.
     """
     if exercise == "Squat":
         return squat_torso_lean(lm)          # LEFT-SIDE camera
     elif exercise == "Push-Up":
         return pushup_body_line_angle(lm)    # LEFT-SIDE camera
-    return None                              # Pull-Up: 1-D
+    elif exercise == "Pull-Up":
+        # Average elbow angle (left + right) for back-view camera
+        le = calculate_angle(lm[L_SHOULDER], lm[L_ELBOW], lm[L_WRIST])
+        re = calculate_angle(lm[R_SHOULDER], lm[R_ELBOW], lm[R_WRIST])
+        return (le + re) / 2.0
+    return None
 
 # ---------------------------------------------------------------------------
 # CANDIDATE features (experimental, NOT used by the app yet).

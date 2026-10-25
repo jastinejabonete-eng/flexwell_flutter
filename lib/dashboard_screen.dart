@@ -45,7 +45,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'title': 'Squat',
       'subtitle': 'Legs & Glutes',
       'iconPath': 'assets/icons/squat.svg',
-      'accent': Colors.cyan,
+      'iconColor': const Color(0xFF0096B2),
       'tag1': 'REPS',
       'tag2': 'Lower Body',
       'filter': 'Dynamic',
@@ -54,7 +54,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'title': 'Push-Up',
       'subtitle': 'Chest & Triceps',
       'iconPath': 'assets/icons/pushup.svg',
-      'accent': Colors.purpleAccent,
+      'iconColor': const Color(0xFFE72E8A),
       'tag1': 'REPS',
       'tag2': 'Upper Body',
       'filter': 'Dynamic',
@@ -63,7 +63,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'title': 'Lunge',
       'subtitle': 'Legs & Core',
       'iconPath': 'assets/icons/lunge.svg',
-      'accent': Colors.cyan,
+      'iconColor': const Color(0xFFE9650C),
       'tag1': 'REPS',
       'tag2': 'Lower Body',
       'filter': 'Dynamic',
@@ -72,7 +72,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'title': 'Pull-Up',
       'subtitle': 'Back & Biceps',
       'iconPath': 'assets/icons/pullup.svg',
-      'accent': Colors.purpleAccent,
+      'iconColor': const Color(0xFF7D3EE6),
       'tag1': 'REPS',
       'tag2': 'Upper Body',
       'filter': 'Dynamic',
@@ -81,7 +81,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'title': 'Plank',
       'subtitle': 'Core Endurance',
       'iconPath': 'assets/icons/plank.svg',
-      'accent': Colors.orangeAccent,
+      'iconColor': const Color(0xFF008F82),
       'tag1': 'TIME',
       'tag2': 'Core',
       'filter': 'Static',
@@ -90,7 +90,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'title': 'Side Plank',
       'subtitle': 'Abs & Core',
       'iconPath': 'assets/icons/sideplank.svg',
-      'accent': Colors.orangeAccent,
+      'iconColor': const Color(0xFF7B4CE2),
       'tag1': 'TIME',
       'tag2': 'Core',
       'filter': 'Static',
@@ -103,9 +103,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _sessionsStream = _sessionsForCurrentUser();
     FirebaseStatus.authRevision.addListener(_onAuthenticationChanged);
     _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      setState(() {
-        _now = DateTime.now();
-      });
+      final now = DateTime.now();
+      if (now.year != _now.year ||
+          now.month != _now.month ||
+          now.day != _now.day) {
+        setState(() => _now = now);
+      }
     });
   }
 
@@ -143,32 +146,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  String _formatDateTime(DateTime dt) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    String dayName = days[dt.weekday - 1];
-    String monthName = months[dt.month - 1];
-    int hour = dt.hour;
-    String period = hour >= 12 ? 'PM' : 'AM';
-    hour = hour % 12;
-    if (hour == 0) hour = 12;
-    String minute = dt.minute.toString().padLeft(2, '0');
-    return '$dayName, $monthName ${dt.day} • $hour:$minute $period';
-  }
-
   List<Map<String, dynamic>> get _filteredExercises {
     return _allExercises.where((ex) {
       final matchesSearch =
@@ -189,8 +166,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryTextColor = isDark ? Colors.white : AppColors.lightText;
-
     return Scaffold(
       backgroundColor: isDark
           ? AppColors.darkBackground
@@ -198,250 +173,257 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _formatDateTime(_now),
-              style: TextStyle(
-                color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'FlexWell',
-              style: TextStyle(
-                color: primaryTextColor,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.1,
-                fontSize: 22,
-              ),
-            ),
-          ],
-        ),
+        title: const Text('FlexWell'),
       ),
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // --- STREAK CARD (streak, best, this week, next milestone) ---
-                  _buildStreakSection(isDark),
-
-                  const SizedBox(height: 32),
-
-                  // --- HEADER ---
-                  Text(
-                    'Choose an exercise',
-                    key: OnboardingTourAnchors.dashboardExercises,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: primaryTextColor,
-                      fontWeight: FontWeight.w800,
-                    ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1120),
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '6 exercises with real-time posture detection',
-                    style: TextStyle(
-                      color: isDark
-                          ? Colors.white54
-                          : AppColors.lightTextSecondary,
-                      fontSize: 14,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.brandBlue,
+                      borderRadius: BorderRadius.circular(22),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // --- SEARCH BAR ---
-                  TextField(
-                    key: OnboardingTourAnchors.dashboardSearch,
-                    onChanged: (val) => setState(() => _searchQuery = val),
-                    style: TextStyle(color: primaryTextColor),
-                    decoration: InputDecoration(
-                      hintText: 'Search exercises, muscle groups...',
-                      hintStyle: TextStyle(
-                        color: isDark ? Colors.white38 : Colors.black38,
-                      ),
-                      prefixIcon: Icon(
-                        Icons.search,
-                        color: isDark
-                            ? Colors.white54
-                            : AppColors.lightTextSecondary,
-                      ),
-                      filled: true,
-                      fillColor: isDark
-                          ? AppColors.darkCardFilled
-                          : Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.05)
-                              : AppColors.lightBorder,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.05)
-                              : AppColors.lightBorder,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: isDark ? AppColors.accent : AppColors.primary,
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // --- FILTER CHIPS ---
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: _filters.map((filter) {
-                        bool isSelected = _selectedFilter == filter;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 10),
-                          child: ChoiceChip(
-                            label: Text(filter),
-                            selected: isSelected,
-                            materialTapTargetSize: MaterialTapTargetSize.padded,
-                            onSelected: (selected) {
-                              if (selected) {
-                                setState(() => _selectedFilter = filter);
-                              }
-                            },
-                            labelStyle: TextStyle(
-                              color: isSelected
-                                  ? Colors.black
-                                  : (isDark
-                                        ? Colors.white
-                                        : AppColors.lightText),
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
-                            backgroundColor: isDark
-                                ? AppColors.darkCardFilled
-                                : Colors.white,
-                            selectedColor: AppColors.accent,
-                            side: BorderSide(
-                              color: isSelected
-                                  ? AppColors.accent
-                                  : (isDark
-                                        ? Colors.white12
-                                        : AppColors.lightBorder),
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-          ),
-
-          // --- EXERCISE GRID ---
-          SliverLayoutBuilder(
-            builder: (context, constraints) {
-              if (_filteredExercises.isEmpty) {
-                return SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 32, 24, 48),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.search_off_rounded,
-                          size: 40,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(height: 12),
+                        // --- HEADER ---
                         Text(
-                          'No exercises found',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Try another search or clear your filters.',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium
+                          'Choose an exercise',
+                          key: OnboardingTourAnchors.dashboardExercises,
+                          style: Theme.of(context).textTheme.headlineSmall
                               ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
                               ),
                         ),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              _searchQuery = '';
-                              _selectedFilter = 'All';
-                            });
-                          },
-                          child: const Text('Clear filters'),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Choose a movement to start a live form scan.',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.88),
+                            fontSize: 14,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                );
-              }
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: [
+                      // --- SEARCH BAR ---
+                      TextField(
+                        key: OnboardingTourAnchors.dashboardSearch,
+                        onChanged: (val) => setState(() => _searchQuery = val),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Search exercises, muscle groups...',
+                          hintStyle: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: AppColors.secondaryTextFor(isDark),
+                          ),
+                          filled: true,
+                          fillColor: isDark
+                              ? AppColors.darkCardFilled
+                              : AppColors.lightSurface,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 0,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.lightBorder,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.lightBorder,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
-              final width = constraints.crossAxisExtent;
-              final textScale = MediaQuery.textScalerOf(context).scale(1);
-              final columns = width < 360
-                  ? 1
-                  : width < 760
-                  ? 2
-                  : width < 1050
-                  ? 3
-                  : 4;
-              final aspectRatio = columns == 1
-                  ? (1.45 / textScale).clamp(0.55, 1.45)
-                  : columns == 2
-                  ? (1.0 / textScale).clamp(0.45, 1.0)
-                  : (1.1 / textScale).clamp(0.42, 1.1);
-
-              return SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverGrid(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: aspectRatio,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) => _buildGridCard(
-                      context,
-                      _filteredExercises[index],
-                      isDark,
-                    ),
-                    childCount: _filteredExercises.length,
+                      // --- FILTER CHIPS ---
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: _filters.map((filter) {
+                            bool isSelected = _selectedFilter == filter;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 10),
+                              child: ChoiceChip(
+                                label: Text(filter),
+                                selected: isSelected,
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.padded,
+                                onSelected: (selected) {
+                                  if (selected) {
+                                    setState(() => _selectedFilter = filter);
+                                  }
+                                },
+                                labelStyle: TextStyle(
+                                  color: isSelected
+                                      ? AppColors.accentFor(isDark)
+                                      : Theme.of(context).colorScheme.onSurface,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                                backgroundColor: isDark
+                                    ? AppColors.darkCardFilled
+                                    : Colors.white,
+                                selectedColor: AppColors.accentSubtleFor(
+                                  isDark,
+                                ),
+                                side: BorderSide(
+                                  color: isSelected
+                                      ? AppColors.accentBorderFor(isDark)
+                                      : (isDark
+                                            ? AppColors.darkBorder
+                                            : AppColors.lightBorder),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
                   ),
                 ),
-              );
-            },
-          ),
+              ),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 32)),
-        ],
+              // --- EXERCISE GRID ---
+              SliverLayoutBuilder(
+                builder: (context, constraints) {
+                  if (_filteredExercises.isEmpty) {
+                    return SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 32, 24, 48),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.search_off_rounded,
+                              size: 40,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'No exercises found',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Try another search or clear your filters.',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _searchQuery = '';
+                                  _selectedFilter = 'All';
+                                });
+                              },
+                              child: const Text('Clear filters'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  final width = constraints.crossAxisExtent;
+                  final textScale = MediaQuery.textScalerOf(context).scale(1);
+                  final columns = width < 360
+                      ? 1
+                      : width < 760
+                      ? 2
+                      : width < 1050
+                      ? 3
+                      : 4;
+                  final aspectRatio = columns == 1
+                      ? (1.3 / textScale).clamp(0.8, 1.3)
+                      : columns == 2
+                      ? (0.82 / textScale).clamp(0.56, 0.82)
+                      : (0.95 / textScale).clamp(0.68, 0.95);
+
+                  return SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    sliver: SliverGrid(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: aspectRatio,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => _buildGridCard(
+                          context,
+                          _filteredExercises[index],
+                          isDark,
+                        ),
+                        childCount: _filteredExercises.length,
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
+                  child: _buildStreakSection(isDark),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -451,120 +433,131 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Map<String, dynamic> data,
     bool isDark,
   ) {
-    Color accentColor = data['accent'];
+    final accentColor = AppColors.accentFor(isDark);
+    final exercise = data['title'] as String;
+    final iconColor = data['iconColor'] as Color;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCardFilled : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+    return Semantics(
+      button: true,
+      label: 'Start $exercise scan',
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkCardFilled : AppColors.lightCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          ),
         ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () async {
-            final exercise = data['title'] as String;
-            if (await showExerciseCameraSetup(context, exercise) &&
-                context.mounted) {
-              await Navigator.push(
-                context,
-                fadeRoute(CameraScreen(exercise: exercise)),
-              );
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // SVG Icon Container
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: SvgPicture.asset(
-                    data['iconPath'],
-                    width: 24,
-                    height: 24,
-                    colorFilter: ColorFilter.mode(accentColor, BlendMode.srcIn),
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                Text(
-                  data['title'],
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  data['subtitle'],
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: isDark
-                        ? Colors.white70
-                        : AppColors.lightTextSecondary,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 10),
-
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.accent.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        data['tag1'],
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: AppColors.voltFor(isDark),
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
+        clipBehavior: Clip.antiAlias,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () async {
+              if (await showExerciseCameraSetup(context, exercise) &&
+                  context.mounted) {
+                await Navigator.push(
+                  context,
+                  fadeRoute(CameraScreen(exercise: exercise)),
+                );
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(9),
                         decoration: BoxDecoration(
-                          color: Colors.blueAccent.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          color: iconColor,
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text(
-                          data['tag2'],
-                          style: TextStyle(
-                            color: isDark ? Colors.blue[300] : Colors.blue[700],
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                        child: SvgPicture.asset(
+                          data['iconPath'],
+                          width: 24,
+                          height: 24,
+                          colorFilter: ColorFilter.mode(
+                            Colors.white,
+                            BlendMode.srcIn,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      const Spacer(),
+                      Icon(
+                        Icons.videocam_outlined,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    exercise,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    data['subtitle'],
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${data['tag1']}  ·  ${data['tag2']}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    constraints: const BoxConstraints(minHeight: 44),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accentColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.videocam_rounded,
+                          color: isDark ? Colors.black : Colors.white,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            'Start scan',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: isDark ? Colors.black : Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -632,15 +625,15 @@ class _StreakStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final color = AppColors.secondaryTextFor(isDark);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCardFilled : Colors.white,
+        color: isDark ? AppColors.darkCardFilled : AppColors.lightCard,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: isDark ? Colors.white12 : AppColors.lightBorder,
+          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
         ),
       ),
       child: Row(
@@ -764,16 +757,24 @@ class _StreakCard extends StatelessWidget {
     required this.isDark,
   });
 
-  static const List<int> _milestones = [3, 7, 14, 30, 60, 100];
   static const List<String> _dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  static const Color _volt = AppColors.accent;
+  static const Color _volt = AppColors.brandSkyBlue;
 
   @override
   Widget build(BuildContext context) {
     final active = stats.current > 0;
-    final textColor = isDark ? Colors.white : AppColors.lightText;
-    final subColor = isDark ? Colors.white60 : AppColors.lightTextSecondary;
-    final accentText = isDark ? _volt : AppColors.primary;
+    final todayUtc = DateTime.utc(now.year, now.month, now.day);
+    final weekStartUtc = DateTime.utc(
+      now.year,
+      now.month,
+      now.day - (now.weekday % 7),
+    );
+    final activeDays = stats.days
+        .where((day) => !day.isBefore(weekStartUtc) && !day.isAfter(todayUtc))
+        .length;
+    final textColor = AppColors.textFor(isDark);
+    final subColor = AppColors.secondaryTextFor(isDark);
+    final accentText = AppColors.accentFor(isDark);
     final borderColor = isDark
         ? Colors.white.withValues(alpha: 0.08)
         : AppColors.lightBorder;
@@ -800,26 +801,11 @@ class _StreakCard extends StatelessWidget {
           'Work out today to keep your ${stats.current}-day streak alive.';
     }
 
-    // Progress toward the next milestone, measured from the previous one.
-    int? next;
-    var previous = 0;
-    for (final m in _milestones) {
-      if (m > stats.current) {
-        next = m;
-        break;
-      }
-      previous = m;
-    }
-    final progress = next == null
-        ? 1.0
-        : (stats.current - previous) / (next - previous);
-    final daysToGo = next == null ? 0 : next - stats.current;
-
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCardFilled : Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        color: isDark ? AppColors.darkCardFilled : AppColors.lightCard,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: !active
               ? borderColor
@@ -832,12 +818,12 @@ class _StreakCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- Headline: flame, count, message, best ---
+          // --- Current streak and a short status ---
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(9),
                 decoration: BoxDecoration(
                   color: flameColor.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
@@ -845,31 +831,21 @@ class _StreakCard extends StatelessWidget {
                 child: Icon(
                   Icons.local_fire_department_rounded,
                   color: flameColor,
-                  size: 30,
+                  size: 24,
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0, end: stats.current.toDouble()),
-                          duration: const Duration(milliseconds: 600),
-                          curve: Curves.easeOutCubic,
-                          builder: (context, value, child) => Text(
-                            '${value.round()}',
-                            style: TextStyle(
-                              fontSize: 34,
-                              height: 1.0,
-                              fontWeight: FontWeight.w900,
-                              color: textColor,
-                            ),
-                          ),
+                        Text(
+                          '${stats.current}',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w900),
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -882,14 +858,14 @@ class _StreakCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 2),
                     Text(
                       message,
-                      maxLines: 3,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 12.5,
-                        height: 1.35,
+                        fontSize: 12,
+                        height: 1.3,
                         color: stats.atRisk ? Colors.orangeAccent : subColor,
                         fontWeight: stats.atRisk
                             ? FontWeight.w600
@@ -901,87 +877,39 @@ class _StreakCard extends StatelessWidget {
               ),
               if (stats.best > 0) ...[
                 const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: accentText.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.emoji_events_rounded,
-                        size: 14,
-                        color: accentText,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Best ${stats.best}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: accentText,
-                        ),
-                      ),
-                    ],
+                Text(
+                  'Best ${stats.best}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: accentText,
                   ),
                 ),
               ],
             ],
           ),
 
-          const SizedBox(height: 18),
-
-          // --- This week ---
-          _buildWeek(textColor, subColor, accentText, borderColor),
-
-          const SizedBox(height: 18),
-
-          // --- Next milestone ---
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: Text(
-                  next == null
-                      ? 'Top milestone reached: ${_milestones.last} days'
-                      : 'Next milestone: $next-day streak',
+                  'This week',
                   style: TextStyle(
-                    fontSize: 12.5,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: textColor,
+                    color: subColor,
                   ),
                 ),
               ),
-              if (next != null)
-                Text(
-                  '$daysToGo ${daysToGo == 1 ? 'day' : 'days'} to go',
-                  style: TextStyle(fontSize: 12, color: subColor),
-                ),
+              Text(
+                '$activeDays active',
+                style: TextStyle(fontSize: 12, color: subColor),
+              ),
             ],
           ),
           const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: progress),
-              duration: const Duration(milliseconds: 600),
-              curve: Curves.easeOutCubic,
-              builder: (context, value, child) => LinearProgressIndicator(
-                value: value,
-                minHeight: 8,
-                backgroundColor: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : AppColors.lightBorder,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  isDark ? _volt : AppColors.accentDark,
-                ),
-              ),
-            ),
-          ),
+          _buildWeek(textColor, subColor, accentText, borderColor),
         ],
       ),
     );
@@ -1025,13 +953,15 @@ class _StreakCard extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Container(
-              width: 38,
-              height: 38,
+              width: 34,
+              height: 34,
               decoration: BoxDecoration(
-                color: worked ? _volt : Colors.transparent,
+                color: worked ? AppColors.warmHighlight : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: worked ? _volt : (isToday ? accentText : borderColor),
+                  color: worked
+                      ? AppColors.brandBlue
+                      : (isToday ? accentText : borderColor),
                   width: isToday ? 2 : 1,
                 ),
               ),
@@ -1039,7 +969,7 @@ class _StreakCard extends StatelessWidget {
                 child: worked
                     ? const Icon(
                         Icons.check_rounded,
-                        color: Colors.black,
+                        color: AppColors.lightText,
                         size: 20,
                       )
                     : Text(

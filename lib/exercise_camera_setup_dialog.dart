@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'app_colors.dart';
 import 'exercise_camera_guide.dart';
 
 Future<bool> showExerciseCameraSetup(
@@ -10,9 +9,9 @@ Future<bool> showExerciseCameraSetup(
   return await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          icon: const Icon(
+          icon: Icon(
             Icons.videocam_rounded,
-            color: AppColors.primary,
+            color: Theme.of(dialogContext).colorScheme.primary,
             size: 34,
           ),
           title: Text('$exercise camera setup'),

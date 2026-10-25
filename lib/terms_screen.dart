@@ -341,22 +341,25 @@ class _TermsScreenState extends State<TermsScreen> {
                           style: ElevatedButton.styleFrom(
                             minimumSize: const Size.fromHeight(52),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
-                            backgroundColor: AppColors.accent,
-                            foregroundColor: Colors.black,
-                            disabledBackgroundColor: scheme.surfaceContainerHighest,
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            backgroundColor: scheme.primary,
+                            foregroundColor: scheme.onPrimary,
+                            disabledBackgroundColor:
+                                scheme.surfaceContainerHighest,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
                           onPressed: _agreed && !_saving ? _accept : null,
                           child: _saving
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: Colors.black,
+                                    color: scheme.onPrimary,
                                   ),
                                 )
                               : const FittedBox(
@@ -380,10 +383,10 @@ class _TermsScreenState extends State<TermsScreen> {
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size.fromHeight(48),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 10),
-                            side: BorderSide(
-                              color: scheme.outline,
+                              horizontal: 16,
+                              vertical: 10,
                             ),
+                            side: BorderSide(color: scheme.outline),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),

@@ -6,6 +6,7 @@ import 'package:flexwell_flutter/pose_analyzer.dart';
 Pose buildPose(
   Map<PoseLandmarkType, List<double>> points, {
   Set<PoseLandmarkType> lowConfidence = const {},
+  Map<PoseLandmarkType, double> likelihoods = const {},
 }) {
   return Pose(
     landmarks: {
@@ -15,7 +16,9 @@ Pose buildPose(
           x: entry.value[0],
           y: entry.value[1],
           z: 0,
-          likelihood: lowConfidence.contains(entry.key) ? 0.2 : 0.95,
+          likelihood:
+              likelihoods[entry.key] ??
+              (lowConfidence.contains(entry.key) ? 0.2 : 0.95),
         ),
     },
   );
@@ -34,6 +37,8 @@ Pose pullUpPose({double shoulderY = 100, double hipY = 220}) => buildPose({
   PoseLandmarkType.rightShoulder: [120, shoulderY],
   PoseLandmarkType.leftElbow: [90, shoulderY + 50],
   PoseLandmarkType.rightElbow: [130, shoulderY + 50],
+  PoseLandmarkType.leftWrist: [80, shoulderY + 100],
+  PoseLandmarkType.rightWrist: [140, shoulderY + 100],
   PoseLandmarkType.leftHip: [105, hipY],
   PoseLandmarkType.rightHip: [115, hipY],
 });
@@ -64,6 +69,24 @@ void main() {
         buildPose(plankPose, lowConfidence: {PoseLandmarkType.leftElbow}),
       );
       expect(lowConfidenceElbow.landmarksReliable, isFalse);
+    });
+
+    test('ML Kit landmark likelihood cutoff includes exactly 0.6', () async {
+      final analyzer = PoseAnalyzer(
+        classifier: (_, _) async => const KnnVerdict.correct(),
+      );
+
+      final atCutoff = await analyzer.analyze(
+        'Plank',
+        buildPose(plankPose, likelihoods: {PoseLandmarkType.leftElbow: 0.6}),
+      );
+      final belowCutoff = await analyzer.analyze(
+        'Plank',
+        buildPose(plankPose, likelihoods: {PoseLandmarkType.leftElbow: 0.59}),
+      );
+
+      expect(atCutoff.landmarksReliable, isTrue);
+      expect(belowCutoff.landmarksReliable, isFalse);
     });
 
     test('calibration requires a stable one-second window', () async {

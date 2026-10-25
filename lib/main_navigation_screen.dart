@@ -123,11 +123,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               );
 
               if (!useRail) {
-                // Account for the bottom NavigationBar so GridView contents
-                // don't get cut off behind the last row of cards.
-                final bottomPadding = MediaQuery.paddingOf(context).bottom +
-                    kBottomNavigationBarHeight;
-                return Padding(padding: EdgeInsets.only(bottom: bottomPadding), child: content);
+                return content;
               }
 
               return Row(

@@ -252,14 +252,14 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               children: [
                 Icon(
                   Icons.fitness_center_rounded,
-                  color: AppColors.accent,
+                  color: AppColors.brandSkyBlue,
                   size: 28,
                 ),
                 const SizedBox(width: 10),
                 Text(
                   'FLEXWELL',
                   style: TextStyle(
-                    color: AppColors.accent,
+                    color: AppColors.brandSkyBlue,
                     fontWeight: FontWeight.w900,
                     fontStyle: FontStyle.italic,
                     fontSize: 24,
@@ -327,7 +327,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             Text(
               'Train smart. Train safe.',
               style: TextStyle(
-                color: AppColors.accent,
+                color: AppColors.brandSkyBlue,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -399,8 +399,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: Colors.black,
+                backgroundColor: Theme.of(ctx).colorScheme.primary,
+                foregroundColor: Theme.of(ctx).colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -437,14 +437,14 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               children: [
                 Icon(
                   Icons.fitness_center_rounded,
-                  color: AppColors.accent,
+                  color: AppColors.brandSkyBlue,
                   size: 24,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'FLEXWELL',
                   style: TextStyle(
-                    color: AppColors.accent,
+                    color: AppColors.brandSkyBlue,
                     fontWeight: FontWeight.w900,
                     fontStyle: FontStyle.italic,
                     fontSize: 20,
@@ -484,7 +484,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             Text(
               'Achievement unlocked on FlexWell',
               style: TextStyle(
-                color: AppColors.accent,
+                color: AppColors.brandSkyBlue,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),

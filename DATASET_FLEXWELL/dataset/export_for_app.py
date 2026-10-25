@@ -112,21 +112,21 @@ def _live_video_dists(exercise, model, max_videos=4, sample_every=5, max_frames=
             s, h, a = lm[L_SHOULDER], lm[L_HIP], lm[L_ANKLE]
             return [ang(s, lm[L_ELBOW], lm[L_WRIST]), ang(s, h, a)]
         if name == "Pull-Up":
-            smy = (lm[L_SHOULDER].y + lm[R_SHOULDER].y) / 2
-            hmy = (lm[L_HIP].y + lm[R_HIP].y) / 2
-            sd = d(lm[L_SHOULDER], lm[R_SHOULDER])
-            return [hmy - smy,
-                    (d(lm[L_ELBOW], lm[R_ELBOW]) / sd) if sd > 1e-6 else 0.0]
+                    smy = (lm[L_SHOULDER].y + lm[R_SHOULDER].y) / 2
+                    hmy = (lm[L_HIP].y + lm[R_HIP].y) / 2
+                    le = ang(lm[L_SHOULDER], lm[L_ELBOW], lm[L_WRIST])
+                    re = ang(lm[R_SHOULDER], lm[R_ELBOW], lm[R_WRIST])
+                    return [hmy - smy, (le + re) / 2.0]
         return None
 
     need = {
-        "Lunge": [L_SHOULDER, L_HIP, L_KNEE, L_ANKLE],
-        "Plank": [L_SHOULDER, L_HIP, L_KNEE, L_ANKLE],
-        "Side Plank": [L_SHOULDER, L_HIP, L_KNEE, L_ANKLE],
-        "Squat": [L_SHOULDER, L_HIP, L_KNEE, L_ANKLE],
-        "Push-Up": [L_SHOULDER, L_ELBOW, L_WRIST, L_HIP, L_ANKLE],
-        "Pull-Up": [L_SHOULDER, R_SHOULDER, L_ELBOW, R_ELBOW],
-    }.get(exercise)
+            "Lunge": [L_SHOULDER, L_HIP, L_KNEE, L_ANKLE],
+            "Plank": [L_SHOULDER, L_HIP, L_KNEE, L_ANKLE],
+            "Side Plank": [L_SHOULDER, L_HIP, L_KNEE, L_ANKLE],
+            "Squat": [L_SHOULDER, L_HIP, L_KNEE, L_ANKLE],
+            "Push-Up": [L_SHOULDER, L_ELBOW, L_WRIST, L_HIP, L_ANKLE],
+            "Pull-Up": [L_SHOULDER, R_SHOULDER, L_ELBOW, R_ELBOW, L_WRIST, R_WRIST],
+        }.get(exercise)
     if need is None:
         print(f"       {exercise}: no landmark set defined, keeping held-out radius")
         return None
@@ -324,19 +324,19 @@ def main():
               f"std={[round(s,2) for s in data['std']]}")
 
     # Sanity check: warn if feature width varies in a way the Dart side
-    # Dart sends: Squat/Push-Up = 2, Pull-Up = 1, Lunge = 5, Plank/Side Plank = 3.
-    # Keep this in sync with _classifierFeatures/_lungeFeatures in
-    # Expected feature widths, mirroring _classifierFeatures() in
-    # lib/pose_analyzer.dart. This is the guard that catches a train/serve
-    # feature-width mismatch, which silently destroys accuracy.
-    #
-    # Pull-Up is 1-D on purpose: its old 2nd feature (elbow/shoulder spread
-    # ratio) measured 0.35 sigma separation / AUC 0.587, and removing it raised
-    # grouped-CV accuracy 67.3% -> 74.8%. If this value ever needs to change,
-    # change it in BOTH places or the app will silently mis-score.
-    expected = {"Squat": 2, "Push-Up": 2, "Pull-Up": 1,
-                "Lunge": 5, "Plank": 3, "Side Plank": 3}
-    print("\nFeature-width sanity check:")
+        # Dart sends: Squat/Push-Up = 2, Pull-Up = 2, Lunge = 5, Plank/Side Plank = 3.
+        # Keep this in sync with _classifierFeatures/_lungeFeatures in
+        # Expected feature widths, mirroring _classifierFeatures() in
+        # lib/pose_analyzer.dart. This is the guard that catches a train/serve
+        # feature-width mismatch, which silently destroys accuracy.
+        #
+        # Pull-Up is 2-D: [vertical_displacement, average_elbow_angle].
+        # The elbow angle provides frame-local signal that displacement alone cannot.
+        # Keep this in sync with feature_2_value() in extract_features.py and
+        # _bonusRatio() in lib/pose_analyzer.dart.
+        expected = {"Squat": 2, "Push-Up": 2, "Pull-Up": 2,
+                    "Lunge": 5, "Plank": 3, "Side Plank": 3}
+        print("\nFeature-width sanity check:")
     for exercise, data in output.items():
         dims = len(data["mean"])
         exp = expected.get(exercise)

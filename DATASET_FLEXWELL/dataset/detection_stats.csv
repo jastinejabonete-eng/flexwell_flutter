@@ -179,16 +179,16 @@ Pull-Up/correct/Copy of IMG_2638.MOV,Pull-Up,correct,332,332,1,100.0
 Pull-Up/correct/Copy of IMG_2640.MOV,Pull-Up,correct,413,413,2,100.0
 Pull-Up/correct/Copy of IMG_2641.MOV,Pull-Up,correct,248,248,1,100.0
 Pull-Up/correct/Copy of IMG_2642.MOV,Pull-Up,correct,301,301,1,100.0
-Pull-Up/correct/Copy of IMG_2644.MOV,Pull-Up,correct,1072,1072,3,100.0
+Pull-Up/correct/Copy of IMG_2644.MOV,Pull-Up,correct,1072,1072,4,100.0
 Pull-Up/correct/Copy of IMG_2645.MOV,Pull-Up,correct,717,717,1,100.0
-Pull-Up/correct/Copy of IMG_2646.MOV,Pull-Up,correct,848,848,2,100.0
+Pull-Up/correct/Copy of IMG_2646.MOV,Pull-Up,correct,848,848,1,100.0
 Pull-Up/correct/Copy of IMG_2647.MOV,Pull-Up,correct,578,578,2,100.0
 Pull-Up/correct/Copy of IMG_2648.MOV,Pull-Up,correct,839,839,1,100.0
 Pull-Up/correct/Copy of IMG_9813.mov,Pull-Up,correct,75,75,1,100.0
-Pull-Up/correct/Copy of IMG_9818.mov,Pull-Up,correct,62,62,1,100.0
+Pull-Up/correct/Copy of IMG_9818.mov,Pull-Up,correct,62,62,0,100.0
 Pull-Up/correct/Copy of IMG_9820.mov,Pull-Up,correct,63,63,0,100.0
 Pull-Up/correct/Copy of IMG_9821.mov,Pull-Up,correct,64,64,0,100.0
-Pull-Up/correct/Copy of IMG_9822.mov,Pull-Up,correct,66,66,0,100.0
+Pull-Up/correct/Copy of IMG_9822.mov,Pull-Up,correct,66,66,1,100.0
 Pull-Up/correct/Copy of IMG_9823.mov,Pull-Up,correct,67,67,0,100.0
 Pull-Up/correct/Copy of IMG_9824.mov,Pull-Up,correct,78,78,1,100.0
 Pull-Up/correct/Copy of IMG_9826.mov,Pull-Up,correct,76,76,1,100.0
@@ -207,7 +207,7 @@ Pull-Up/incorrect/Copy of IMG_2638.MOV,Pull-Up,incorrect,332,332,1,100.0
 Pull-Up/incorrect/Copy of IMG_2640.MOV,Pull-Up,incorrect,413,413,2,100.0
 Pull-Up/incorrect/Copy of IMG_2641.MOV,Pull-Up,incorrect,248,248,1,100.0
 Pull-Up/incorrect/Copy of IMG_2642.MOV,Pull-Up,incorrect,301,301,1,100.0
-Pull-Up/incorrect/Copy of IMG_2644.MOV,Pull-Up,incorrect,1072,1072,3,100.0
+Pull-Up/incorrect/Copy of IMG_2644.MOV,Pull-Up,incorrect,1072,1072,4,100.0
 Pull-Up/incorrect/Copy of IMG_2645.MOV,Pull-Up,incorrect,717,717,1,100.0
 Pull-Up/incorrect/Copy of IMG_2646.MOV,Pull-Up,incorrect,848,848,1,100.0
 Pull-Up/incorrect/Copy of IMG_2647.MOV,Pull-Up,incorrect,578,578,2,100.0
@@ -215,7 +215,7 @@ Pull-Up/incorrect/Copy of IMG_2648.MOV,Pull-Up,incorrect,839,839,1,100.0
 Pull-Up/incorrect/Copy of IMG_9897(1).mov,Pull-Up,incorrect,83,83,2,100.0
 Pull-Up/incorrect/Copy of IMG_9897.mov,Pull-Up,incorrect,83,83,2,100.0
 Pull-Up/incorrect/Copy of IMG_9898(1).mov,Pull-Up,incorrect,69,69,1,100.0
-Pull-Up/incorrect/Copy of IMG_9898.mov,Pull-Up,incorrect,69,69,0,100.0
+Pull-Up/incorrect/Copy of IMG_9898.mov,Pull-Up,incorrect,69,69,1,100.0
 Pull-Up/incorrect/Copy of IMG_9899(1).mov,Pull-Up,incorrect,148,148,2,100.0
 Pull-Up/incorrect/Copy of IMG_9899.mov,Pull-Up,incorrect,148,148,2,100.0
 Pull-Up/incorrect/Copy of IMG_9900(1).mov,Pull-Up,incorrect,128,128,2,100.0
@@ -223,7 +223,7 @@ Pull-Up/incorrect/Copy of IMG_9900.mov,Pull-Up,incorrect,128,128,2,100.0
 Pull-Up/incorrect/Copy of IMG_9901(1).mov,Pull-Up,incorrect,102,102,1,100.0
 Pull-Up/incorrect/Copy of IMG_9901.mov,Pull-Up,incorrect,102,102,1,100.0
 Pull-Up/incorrect/Copy of IMG_9902(1).mov,Pull-Up,incorrect,167,167,2,100.0
-Pull-Up/incorrect/Copy of IMG_9902.mov,Pull-Up,incorrect,167,167,3,100.0
+Pull-Up/incorrect/Copy of IMG_9902.mov,Pull-Up,incorrect,167,167,2,100.0
 Pull-Up/incorrect/Copy of IMG_9903(1).mov,Pull-Up,incorrect,124,124,2,100.0
 Pull-Up/incorrect/Copy of IMG_9903.mov,Pull-Up,incorrect,124,124,2,100.0
 Pull-Up/incorrect/Copy of IMG_9904(1).mov,Pull-Up,incorrect,130,130,2,100.0
@@ -236,7 +236,7 @@ Pull-Up/incorrect/Copy of IMG_9907.mov,Pull-Up,incorrect,119,119,1,100.0
 Pull-Up/incorrect/Copy of IMG_9908.mov,Pull-Up,incorrect,119,119,2,100.0
 Pull-Up/incorrect/Copy of IMG_9909.mov,Pull-Up,incorrect,74,74,1,100.0
 Pull-Up/incorrect/Copy of IMG_9910.mov,Pull-Up,incorrect,80,80,1,100.0
-Push-Up/correct/IMG_0452.mov,Push-Up,correct,75,74,2,98.7
+Push-Up/correct/IMG_0452.mov,Push-Up,correct,75,75,2,100.0
 Push-Up/correct/IMG_0453.mov,Push-Up,correct,86,86,1,100.0
 Push-Up/correct/IMG_0454.mov,Push-Up,correct,65,65,1,100.0
 Push-Up/correct/IMG_0455.mov,Push-Up,correct,78,78,1,100.0
@@ -272,9 +272,9 @@ Push-Up/correct/IMG_4474.MOV,Push-Up,correct,88,88,1,100.0
 Push-Up/correct/IMG_4475.MOV,Push-Up,correct,62,62,1,100.0
 Push-Up/correct/IMG_4477.MOV,Push-Up,correct,83,83,1,100.0
 Push-Up/incorrect/IMG_0466.mov,Push-Up,incorrect,83,83,1,100.0
-Push-Up/incorrect/IMG_0467.mov,Push-Up,incorrect,122,122,1,100.0
+Push-Up/incorrect/IMG_0467.mov,Push-Up,incorrect,122,122,2,100.0
 Push-Up/incorrect/IMG_0468.mov,Push-Up,incorrect,119,119,1,100.0
-Push-Up/incorrect/IMG_0469.mov,Push-Up,incorrect,150,150,3,100.0
+Push-Up/incorrect/IMG_0469.mov,Push-Up,incorrect,150,150,4,100.0
 Push-Up/incorrect/IMG_0470.mov,Push-Up,incorrect,127,127,1,100.0
 Push-Up/incorrect/IMG_0471.mov,Push-Up,incorrect,128,128,1,100.0
 Push-Up/incorrect/IMG_0472.mov,Push-Up,incorrect,165,165,1,100.0
@@ -284,11 +284,11 @@ Push-Up/incorrect/IMG_0475.mov,Push-Up,incorrect,121,121,1,100.0
 Push-Up/incorrect/IMG_0476.mov,Push-Up,incorrect,173,173,2,100.0
 Push-Up/incorrect/IMG_0477.mov,Push-Up,incorrect,115,115,1,100.0
 Push-Up/incorrect/IMG_3306.MOV,Push-Up,incorrect,199,199,1,100.0
-Push-Up/incorrect/IMG_3307.MOV,Push-Up,incorrect,179,179,3,100.0
+Push-Up/incorrect/IMG_3307.MOV,Push-Up,incorrect,179,179,2,100.0
 Push-Up/incorrect/IMG_3308.MOV,Push-Up,incorrect,275,275,1,100.0
 Push-Up/incorrect/IMG_3309.MOV,Push-Up,incorrect,258,258,1,100.0
 Push-Up/incorrect/IMG_3310.MOV,Push-Up,incorrect,210,210,1,100.0
-Push-Up/incorrect/IMG_3311.MOV,Push-Up,incorrect,210,210,4,100.0
+Push-Up/incorrect/IMG_3311.MOV,Push-Up,incorrect,210,210,1,100.0
 Push-Up/incorrect/IMG_3312.MOV,Push-Up,incorrect,333,333,1,100.0
 Push-Up/incorrect/IMG_3313.MOV,Push-Up,incorrect,186,186,1,100.0
 Push-Up/incorrect/IMG_3314.MOV,Push-Up,incorrect,242,242,1,100.0
@@ -307,7 +307,7 @@ Push-Up/incorrect/IMG_4487.MOV,Push-Up,incorrect,73,73,1,100.0
 Push-Up/incorrect/IMG_4488.MOV,Push-Up,incorrect,128,128,1,100.0
 Push-Up/incorrect/IMG_4489.MOV,Push-Up,incorrect,100,100,1,100.0
 Push-Up/incorrect/IMG_4490.MOV,Push-Up,incorrect,74,74,1,100.0
-Side Plank/correct/Copy of IMG_0074(1).mov,Side Plank,correct,15,15,15,100.0
+Side Plank/correct/Copy of IMG_0074(1).mov,Side Plank,correct,15,14,14,93.3
 Side Plank/correct/Copy of IMG_0074.mov,Side Plank,correct,15,15,15,100.0
 Side Plank/correct/Copy of IMG_0075(1).mov,Side Plank,correct,15,15,15,100.0
 Side Plank/correct/Copy of IMG_0075.mov,Side Plank,correct,15,15,15,100.0
@@ -340,10 +340,10 @@ Side Plank/correct/Copy of IMG_0089.mov,Side Plank,correct,14,14,14,100.0
 Side Plank/correct/Copy of IMG_0178.mov,Side Plank,correct,16,16,16,100.0
 Side Plank/correct/Copy of IMG_0179.mov,Side Plank,correct,16,16,16,100.0
 Side Plank/correct/Copy of IMG_0180.mov,Side Plank,correct,15,15,15,100.0
-Side Plank/correct/Copy of IMG_0181.mov,Side Plank,correct,16,16,16,100.0
+Side Plank/correct/Copy of IMG_0181.mov,Side Plank,correct,16,15,15,93.8
 Side Plank/correct/Copy of IMG_0182.mov,Side Plank,correct,15,15,15,100.0
 Side Plank/correct/Copy of IMG_0183.mov,Side Plank,correct,16,16,16,100.0
-Side Plank/correct/Copy of IMG_0184.mov,Side Plank,correct,15,14,14,93.3
+Side Plank/correct/Copy of IMG_0184.mov,Side Plank,correct,15,15,15,100.0
 Side Plank/correct/Copy of IMG_0185.mov,Side Plank,correct,15,15,15,100.0
 Side Plank/correct/Copy of IMG_0186.mov,Side Plank,correct,15,15,15,100.0
 Side Plank/correct/Copy of IMG_0187.mov,Side Plank,correct,14,14,14,100.0
@@ -446,7 +446,7 @@ Squat/incorrect/batch20261012_IMG_3361.MOV,Squat,incorrect,1351,1351,16,100.0
 Squat/incorrect/batch20261012_IMG_3362.MOV,Squat,incorrect,1272,1272,13,100.0
 Squat/incorrect/batch20261012_IMG_3365.MOV,Squat,incorrect,1400,1400,9,100.0
 Squat/incorrect/batch20261012_IMG_3366.MOV,Squat,incorrect,725,725,8,100.0
-Squat/incorrect/batch20261012_IMG_3367.MOV,Squat,incorrect,900,900,14,100.0
+Squat/incorrect/batch20261012_IMG_3367.MOV,Squat,incorrect,900,900,12,100.0
 Squat/incorrect/IMG_0370.mov,Squat,incorrect,78,77,1,98.7
 Squat/incorrect/IMG_0371.mov,Squat,incorrect,119,119,1,100.0
 Squat/incorrect/IMG_0372.mov,Squat,incorrect,119,119,1,100.0

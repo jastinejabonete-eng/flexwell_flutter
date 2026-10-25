@@ -24,6 +24,8 @@ class SummaryScreen extends StatefulWidget {
   final int reps;
   final int longestHold;
   final bool isRepBased;
+  final bool hasSufficientData;
+  final String? warningMessage;
   // How many of the completed reps had zero incorrect-form frames during
   // their lifecycle (see CameraScreen's Fix #2: quality-tracked reps).
   // Only meaningful when isRepBased is true; defaults to 0 for hold-based
@@ -42,6 +44,8 @@ class SummaryScreen extends StatefulWidget {
     required this.reps,
     required this.longestHold,
     required this.isRepBased,
+    required this.hasSufficientData,
+    this.warningMessage,
     this.perfectReps = 0,
     this.unlockedAchievements = const [],
   });
@@ -67,7 +71,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColors.darkCardFilled : Colors.white;
     final text = isDark ? Colors.white : AppColors.lightText;
-    final sub = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final sub = AppColors.secondaryTextFor(isDark);
 
     showDialog(
       context: context,
@@ -140,8 +144,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: Colors.black,
+                backgroundColor: Theme.of(ctx).colorScheme.primary,
+                foregroundColor: Theme.of(ctx).colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -163,9 +167,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor = isDark ? AppColors.darkCardFilled : Colors.white;
     final primaryTextColor = isDark ? Colors.white : AppColors.lightText;
-    final secondaryTextColor = isDark
-        ? Colors.white54
-        : AppColors.lightTextSecondary;
+    final secondaryTextColor = AppColors.secondaryTextFor(isDark);
 
     // Guard against out-of-range values so the ring and text never break.
     final safeAccuracy = widget.accuracy.clamp(0, 100).toInt();
@@ -233,51 +235,120 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           letterSpacing: 0.5,
                         ),
                       ),
-                      const SizedBox(height: 32),
-
-                      // Modern Fitness Accuracy Ring
-                      Center(
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            SizedBox(
-                              width: 180,
-                              height: 180,
-                              child: CircularProgressIndicator(
-                                value: safeAccuracy / 100,
-                                strokeWidth: 16,
-                                backgroundColor: isDark
-                                    ? Colors.white.withValues(alpha: 0.05)
-                                    : Colors.grey.shade200,
-                                color: statusColor,
-                                strokeCap: StrokeCap.round,
-                              ),
+                      if (widget.warningMessage != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: Colors.orange.withValues(alpha: 0.45),
                             ),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '$safeAccuracy%',
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.warning_amber_rounded,
+                                color: Colors.orange,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  widget.warningMessage!,
                                   style: TextStyle(
-                                    fontSize: 42,
-                                    fontWeight: FontWeight.w900,
                                     color: primaryTextColor,
+                                    fontSize: 13,
+                                    height: 1.4,
                                   ),
                                 ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 32),
+
+                      if (widget.hasSufficientData)
+                        Center(
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              SizedBox(
+                                width: 180,
+                                height: 180,
+                                child: CircularProgressIndicator(
+                                  value: safeAccuracy / 100,
+                                  strokeWidth: 16,
+                                  backgroundColor: isDark
+                                      ? Colors.white.withValues(alpha: 0.05)
+                                      : Colors.grey.shade200,
+                                  color: statusColor,
+                                  strokeCap: StrokeCap.round,
+                                ),
+                              ),
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '$safeAccuracy%',
+                                    style: TextStyle(
+                                      fontSize: 42,
+                                      fontWeight: FontWeight.w900,
+                                      color: primaryTextColor,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Accuracy',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: secondaryTextColor,
+                                      letterSpacing: 1.1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        SizedBox(
+                          height: 180,
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.motion_photos_off_rounded,
+                                  color: secondaryTextColor,
+                                  size: 34,
+                                ),
+                                const SizedBox(height: 10),
                                 Text(
-                                  'Accuracy',
+                                  'Not enough data to score this session',
+                                  textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
+                                    color: primaryTextColor,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Stay in frame and keep moving so FlexWell can track your form.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
                                     color: secondaryTextColor,
-                                    letterSpacing: 1.1,
+                                    fontSize: 14,
+                                    height: 1.4,
                                   ),
                                 ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
-                      ),
 
                       const SizedBox(height: 32),
 
@@ -310,18 +381,14 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
-                                    color: AppColors.accent.withValues(
-                                      alpha: 0.15,
-                                    ),
+                                    color: AppColors.accentSubtleFor(isDark),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
                                     widget.isRepBased
                                         ? Icons.repeat_rounded
                                         : Icons.timer_rounded,
-                                    color: isDark
-                                        ? AppColors.accent
-                                        : Colors.green.shade800,
+                                    color: AppColors.accentFor(isDark),
                                     size: 32,
                                   ),
                                 ),
@@ -422,16 +489,19 @@ class _SummaryScreenState extends State<SummaryScreen> {
                         height: 56,
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                AppColors.accent, // Volt Green Gym color
-                            foregroundColor: Colors.black,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onPrimary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
                             elevation: 4,
-                            shadowColor: AppColors.accent.withValues(
-                              alpha: 0.4,
-                            ),
+                            shadowColor: Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.25),
                           ),
                           icon: const Icon(Icons.refresh_rounded, size: 24),
                           label: const Text(

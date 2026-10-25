@@ -208,7 +208,8 @@ class PoseAnalyzer {
   static const _rShoulder = PoseLandmarkType.rightShoulder;
   static const _lElbow = PoseLandmarkType.leftElbow;
   static const _lWrist = PoseLandmarkType.leftWrist;
-  static const _rElbow = PoseLandmarkType.rightElbow;
+    static const _rWrist = PoseLandmarkType.rightWrist;
+    static const _rElbow = PoseLandmarkType.rightElbow;
   static const _lHip = PoseLandmarkType.leftHip;
   static const _rHip = PoseLandmarkType.rightHip;
   static const _lKnee = PoseLandmarkType.leftKnee;
@@ -221,9 +222,7 @@ class PoseAnalyzer {
   double? _baselineY;
   double? _baselineScale;
   static const Duration _calibrationWindow = Duration(seconds: 1);
-  static const Duration _minimumCalibrationWindow = Duration(
-    milliseconds: 900,
-  );
+  static const Duration _minimumCalibrationWindow = Duration(milliseconds: 900);
   static const int _minimumCalibrationSamples = 4;
 
   /// Stillness threshold for calibration, matching the trainer's
@@ -369,7 +368,10 @@ class PoseAnalyzer {
   static bool _reliable(Pose pose, List<PoseLandmarkType> types) {
     for (final t in types) {
       final lm = pose.landmarks[t];
-      if (lm == null || lm.likelihood < 0.6) return false;
+      if (lm == null ||
+          lm.likelihood < PoseLandmarkRequirements.minLikelihood) {
+        return false;
+      }
     }
     return true;
   }
@@ -442,16 +444,23 @@ class PoseAnalyzer {
   );
 
   /// feature_2 (feature_2_value() in extract_features.py).
-  static double _bonusRatio(String exercise, Pose pose) {
-    if (exercise == 'Squat') return _torsoLeanAngle(pose);
-    if (exercise == 'Push-Up') return _pushupBodyLineAngle(pose);
-    final elbowDist = _dist(pose.landmarks[_lElbow]!, pose.landmarks[_rElbow]!);
-    final shoulderDist = _dist(
-      pose.landmarks[_lShoulder]!,
-      pose.landmarks[_rShoulder]!,
-    );
-    return shoulderDist > 1e-6 ? elbowDist / shoulderDist : 0;
-  }
+    static double _bonusRatio(String exercise, Pose pose) {
+      if (exercise == 'Squat') return _torsoLeanAngle(pose);
+      if (exercise == 'Push-Up') return _pushupBodyLineAngle(pose);
+      // Pull-Up: average elbow angle (left + right) for back-view camera.
+      // Matches extract_features.py feature_2_value() for Pull-Up.
+      final leftElbow = _angle(
+        pose.landmarks[_lShoulder]!,
+        pose.landmarks[_lElbow]!,
+        pose.landmarks[_lWrist]!,
+      );
+      final rightElbow = _angle(
+        pose.landmarks[_rShoulder]!,
+        pose.landmarks[_rElbow]!,
+        pose.landmarks[_rWrist]!,
+      );
+      return (leftElbow + rightElbow) / 2.0;
+    }
 
   bool _tryCalibrate(String exercise, Pose pose) {
     if (_baselineY != null) return true;
@@ -521,26 +530,32 @@ class PoseAnalyzer {
   }
 
   List<double> _classifierFeatures(
-    String exercise,
-    Pose pose,
-    double displacement,
-  ) {
-    if (exercise == 'Squat') {
-      return [_squatKneeAngle(pose), _bonusRatio(exercise, pose)];
+      String exercise,
+      Pose pose,
+      double displacement,
+    ) {
+      if (exercise == 'Squat') {
+        return [_squatKneeAngle(pose), _bonusRatio(exercise, pose)];
+      }
+      if (exercise == 'Push-Up') {
+        return [_pushupElbowAngle(pose), _bonusRatio(exercise, pose)];
+      }
+      // Pull-Up is now 2-D: [vertical_displacement, average_elbow_angle].
+      // The elbow angle provides frame-local signal that displacement alone cannot.
+      // Matches extract_features.py feature_2_value() for Pull-Up.
+      final leftElbow = _angle(
+        pose.landmarks[_lShoulder]!,
+        pose.landmarks[_lElbow]!,
+        pose.landmarks[_lWrist]!,
+      );
+      final rightElbow = _angle(
+        pose.landmarks[_rShoulder]!,
+        pose.landmarks[_rElbow]!,
+        pose.landmarks[_rWrist]!,
+      );
+      final avgElbow = (leftElbow + rightElbow) / 2.0;
+      return [displacement, avgElbow];
     }
-    if (exercise == 'Push-Up') {
-      return [_pushupElbowAngle(pose), _bonusRatio(exercise, pose)];
-    }
-    // Pull-Up is 1-D on purpose. The old second feature (elbow/shoulder spread
-    // ratio) measured 0.35 sigma separation and AUC 0.587 -- barely above
-    // chance -- and a grouped-CV leave-one-out showed REMOVING it raised
-    // accuracy from 70.3% to 73.5%. None of the frame-local replacement
-    // candidates beat that: pl_elbow_asym scored 80.3% but with AUC 0.211,
-    // i.e. it predicted the label backwards and was fitting the clip set
-    // rather than form quality, so it was rejected. Pull-Up therefore ships
-    // with the vertical-displacement feature only.
-    return [displacement];
-  }
 
   List<double> _lungeFeatures(Pose pose) {
     final hip = pose.landmarks[_lHip]!;
@@ -612,9 +627,7 @@ class PoseAnalyzer {
     _repCommitted = true;
     _repVerdict = verdict;
     _repOutOfDistribution = false;
-    _verdictHoldUntil = verdict
-        ? null
-        : _clock().add(_verdictHoldDuration);
+    _verdictHoldUntil = verdict ? null : _clock().add(_verdictHoldDuration);
     if (kDebugMode) {
       debugPrint(
         '[$exercise] rep verdict ($reason): peak=$features '
@@ -630,9 +643,7 @@ class PoseAnalyzer {
   /// instead of silently dropped. Call from CameraScreen._endSession() before
   /// saving the session. No-op when there's nothing to judge.
   Future<void> finalizeRep(String exercise) async {
-    if (_peakFeatures != null &&
-        !_repCommitted &&
-        _hasMinimumEngagement()) {
+    if (_peakFeatures != null && !_repCommitted && _hasMinimumEngagement()) {
       await _commitRepVerdict(exercise, 'session ended');
     }
   }

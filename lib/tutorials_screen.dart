@@ -104,7 +104,7 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
                     'Watch a demonstration, then start a scan with the right camera setup.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: isDark
-                          ? Colors.white70
+                          ? AppColors.darkTextSecondary
                           : AppColors.lightTextSecondary,
                       height: 1.45,
                     ),
@@ -119,15 +119,13 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
                         vertical: 7,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.voltFor(
-                          isDark,
-                        ).withValues(alpha: 0.12),
+                        color: AppColors.accentSubtleFor(isDark),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         '6 exercise guides',
                         style: TextStyle(
-                          color: AppColors.voltFor(isDark),
+                          color: AppColors.accentFor(isDark),
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
@@ -156,10 +154,8 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: isExpanded
-                    ? AppColors.voltFor(isDark)
-                    : (isDark
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : AppColors.lightBorder),
+                    ? AppColors.accentFor(isDark)
+                    : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
                 width: isExpanded ? 2 : 1,
               ),
             ),
@@ -209,7 +205,7 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: AppColors.accent,
+                                color: AppColors.brandSkyBlue,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w900,
                                 fontStyle: FontStyle.italic,
@@ -234,12 +230,10 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
                         top: 16,
                         child: Container(
                           constraints: const BoxConstraints(minHeight: 48),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
                             color: isExpanded
-                                ? AppColors.accent
+                                ? Theme.of(context).colorScheme.primary
                                 : Colors.black54,
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -251,13 +245,15 @@ class _TutorialsScreenState extends State<TutorialsScreen> {
                                     ? Icons.keyboard_arrow_up_rounded
                                     : Icons.play_arrow_rounded,
                                 color: isExpanded
-                                    ? Colors.black
+                                    ? Theme.of(context).colorScheme.onPrimary
                                     : Colors.white,
                                 size: 20,
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                isExpanded ? 'Close tutorial' : 'Watch tutorial',
+                                isExpanded
+                                    ? 'Close tutorial'
+                                    : 'Watch tutorial',
                                 maxLines: 1,
                                 softWrap: false,
                                 style: TextStyle(
@@ -387,8 +383,8 @@ class _AssetVideoPlayerState extends State<_AssetVideoPlayer> {
   Widget _scanButton() {
     return ElevatedButton.icon(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.accent,
-        foregroundColor: Colors.black,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         minimumSize: const Size(48, 48),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
@@ -486,8 +482,10 @@ class _AssetVideoPlayerState extends State<_AssetVideoPlayer> {
         ],
       );
     } else {
-      child = const Center(
-        child: CircularProgressIndicator(color: AppColors.accent),
+      child = Center(
+        child: CircularProgressIndicator(
+          color: Theme.of(context).colorScheme.primary,
+        ),
       );
     }
 

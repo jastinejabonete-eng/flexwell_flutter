@@ -37,8 +37,8 @@ class PosePainter extends CustomPainter {
   /// from the body. Null falls back to imageSize's ratio.
   final double? previewAspectRatio;
 
-  /// Same reliability cut-off the analyzer uses (PoseAnalyzer._reliable).
-  static const double minLikelihood = 0.6;
+  /// Same reliability cut-off used by the form analyzer.
+  static const double minLikelihood = PoseLandmarkRequirements.minLikelihood;
 
   PosePainter({
     required this.pose,
@@ -95,8 +95,7 @@ class PosePainter extends CustomPainter {
   };
 
   /// Exercises whose analysis doesn't use the lower body.
-  static bool hidesLowerBody(String exercise) =>
-      exercise == 'Pull-Up';
+  static bool hidesLowerBody(String exercise) => exercise == 'Pull-Up';
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -111,7 +110,9 @@ class PosePainter extends CustomPainter {
     }
     // Incomplete skeleton for this exercise: draw nothing.
     if (!_hasRequiredLandmarks(currentPose)) return;
-    final color = isNeutral ? Colors.orange : (isCorrect ? Colors.green : Colors.red);
+    final color = isNeutral
+        ? Colors.orange
+        : (isCorrect ? Colors.green : Colors.red);
 
     // Bones: drawn as one batch of line segments (butt caps, width 4, exactly
     // like the previous per-line drawLine calls).

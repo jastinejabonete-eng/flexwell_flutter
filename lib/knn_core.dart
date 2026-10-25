@@ -207,18 +207,26 @@ KnnVerdict knnClassifyDetailed(
   }
 
   var correctVotes = 0;
-  for (var i = 0; i < count; i++) {
-    if (bestCorrect[i]) correctVotes++;
-  }
-  final incorrectVotes = count - correctVotes;
-  if (minIncorrectVotes != null) {
-    return incorrectVotes < minIncorrectVotes
-        ? const KnnVerdict.correct()
-        : const KnnVerdict.incorrect();
-  }
-  return correctVotes > count / 2
-      ? const KnnVerdict.correct()
-      : const KnnVerdict.incorrect();
+    for (var i = 0; i < count; i++) {
+      if (bestCorrect[i]) correctVotes++;
+    }
+    final incorrectVotes = count - correctVotes;
+
+    // For 1-D exercises (formerly Pull-Up, now none), require strong consensus (4/5 votes)
+        // to avoid guessing on class overlap. Split votes -> OOD.
+        // Now that Pull-Up is 2-D, this branch is kept for future 1-D exercises only.
+        final isOneD = m.dims == 1;
+        final minVotesForVerdict = isOneD ? 4 : (minIncorrectVotes != null
+            ? count - minIncorrectVotes + 1
+            : (count ~/ 2 + 1));
+
+    if (correctVotes >= minVotesForVerdict) {
+      return const KnnVerdict.correct();
+    }
+    if (incorrectVotes >= minVotesForVerdict) {
+      return const KnnVerdict.incorrect();
+    }
+    return const KnnVerdict.outOfDistribution();
 }
 
 // math.sqrt without importing dart:math at the top (keeps this file's imports

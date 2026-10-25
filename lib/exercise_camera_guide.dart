@@ -18,7 +18,7 @@ class ExerciseCameraGuide {
       exercise: 'Squat',
       view: 'Left side view',
       setup:
-          'Turn so your left side faces the camera. Keep both shoulders and hips, plus your left knee and ankle, visible.',
+          'Turn, so your left side faces the camera. Keep both shoulders and hips, along with your left knee and ankle, in view.',
       repBased: true,
       calibrates: true,
     ),
@@ -26,7 +26,7 @@ class ExerciseCameraGuide {
       exercise: 'Push-Up',
       view: 'Left side view',
       setup:
-          'Turn so your left side faces the camera. Keep your left shoulder, elbow, wrist, hip and ankle visible.',
+          'Turn, so your left side faces the camera. Keep your left shoulder, elbow, wrist, hip, and ankle visible.',
       repBased: true,
       calibrates: true,
     ),
@@ -34,7 +34,7 @@ class ExerciseCameraGuide {
       exercise: 'Pull-Up',
       view: 'Back view',
       setup:
-          'Put the camera behind you so both shoulders, elbows and hips are visible.',
+          'Put the camera behind you, so both shoulders, elbows, and hips are visible.',
       repBased: true,
       calibrates: true,
     ),
@@ -42,7 +42,7 @@ class ExerciseCameraGuide {
       exercise: 'Lunge',
       view: 'Left side view',
       setup:
-          'Turn so your left side faces the camera. Keep your left shoulder, hip, knee and ankle in frame.',
+          'Turn, so your left side faces the camera. Keep your left shoulder, hip, knee, and ankle in frame.',
       repBased: true,
       calibrates: false,
     ),
@@ -50,7 +50,7 @@ class ExerciseCameraGuide {
       exercise: 'Plank',
       view: 'Left side view',
       setup:
-          'Turn so your left side faces the camera. Keep your shoulder, elbow, hip and ankle visible, with a clear line from shoulder to ankle.',
+          'Turn, so your left side faces the camera. Keep your shoulder, elbow, hip, and ankle visible, with a clear line from shoulder to ankle.',
       repBased: false,
       calibrates: false,
     ),
@@ -58,7 +58,7 @@ class ExerciseCameraGuide {
       exercise: 'Side Plank',
       view: 'Left side view',
       setup:
-          'Turn so your left side faces the camera. Keep your shoulder, elbow, hip and ankle in view.',
+          'Turn, so your left side faces the camera. Keep your shoulder, elbow, hip, and ankle in view.',
       repBased: false,
       calibrates: false,
     ),
