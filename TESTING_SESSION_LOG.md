@@ -184,14 +184,27 @@ not safely automatable without trainer review of the actual videos.
   real fix needs frame-level labels or better features + trainer review.
 - Squat oodRadius updated by the re-export (1.7524 -> 2.1235, live-calibrated).
 
+## Phase 3: documentation refresh + build smoke (2026-11-06, continued)
+
+- `TEST_RESULTS.md` fully rewritten: now reflects reality (65/65 tests,
+  analyze 0 issues, relabel-model CV table, sim results incl. the
+  Plank/Side Plank/Lunge data limitation, device checklist unchanged).
+- `flutter build apk --debug`: ✅ 141.1s, built with the relabel model asset
+  (build\app\outputs\flutter-apk\app-debug.apk). KGP warnings from
+  firebase_* plugins noted (pre-existing, informational).
+- Emulator smoke test ATTEMPTED: `flutter emulators --launch iphone` boots to
+  adb "offline" and never completes (>10 min). Killed the dead qemu process;
+  a physical Android device (with camera) remains required for
+  device_check_protocol.md. Marked as user-side task.
+
 ## Remaining work (the "other" — deferred)
-1. ML pipeline re-validation: Plank/Side Plank/Lunge label audit, Pull-Up
-   oodRadius widening; re-extract → re-export → re-validate
-   (DATASET_FLEXWELL/dataset: extract_features.py → export_for_app.py →
-   train_and_validate.py)
-2. Device/manual testing + 20-min stress test (device_check_protocol.md)
+1. ~~ML pipeline re-validation: relabel~~ DONE 2026-11-06 (conservative
+   feature relabel adopted; frame-level refinement still open for
+   Plank/Side Plank/Lunge)
+2. Device/manual testing + 20-min stress test (device_check_protocol.md) —
+   requires a physical Android device (emulator dead: boots to adb offline)
 3. Push-Up shallow-rep UX: reps under disp 0.12 never register (by design?)
-4. TEST_RESULTS.md in repo still stale (claims 79 tests); real suite = 64 tests
+4. ~~TEST_RESULTS.md stale~~ DONE (rewritten 2026-11-06)
 
 ## Files changed in repo
 - lib/knn_classifier.dart (+getter) — COMMITTED
