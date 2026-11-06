@@ -93,6 +93,83 @@ labeled 'incorrect', while the 'correct' cluster mean has MORE hip deviation.)
 Working exercises (Squat, Push-Up, Pull-Up) classify correctly at cluster means.
 Also: Pull-Up oodRadius is only 0.59 z-units (Squat 1.75, Lunge 8.0) — very tight.
 
+## Phase 2: ML pipeline audit (2026-11-06, continued)
+
+### What the pipeline looks like
+- Labels are VIDEO-level, from folder names: `features.csv` rows inherit
+  `<Exercise>/<label>/<file>.mov` even when a frame's pose matches the other
+  class (DATASET_FLEXWELL/dataset/extract_features.py main()).
+- train_and_validate.py (video-grouped CV): Lunge .85, Plank .80, Push-Up .86,
+  Side Plank .78, Squat .93, Pull-Up .78 (but Pull-Up holdout recall for
+  correct is only 0.50 with 32 held-out rows).
+- export_for_app.py: row-level held-out oodRadius ALWAYS collapses (0.18–0.70)
+  because same-video near-duplicate rows contaminate the holdout; the live-video
+  replay fallback (mediapipe, ≤4 vids, ≤200 frames) rescues every exercise.
+  Shipped radii (dataset json == assets json, byte-identical) ARE live-calibrated;
+  Pull-Up 0.5871 equals live p99 (max observed 0.630, only 274 frames replayed
+  so the tail is undersampled). Re-running the export is nearly deterministic
+  except Squat radius (1.7524 -> 2.1235 run-to-run) — keep committed values.
+
+### Label-mixing audit (audit_label_mixing.py, leave-one-video-out kNN)
+Saved full report: DATASET_FLEXWELL/dataset/audit_label_mixing_output.txt
+Per-video frame votes against the video's own label:
+- Side Plank: 17/115 videos >50% disagree (21.0% mean), incl. a batch of
+  IMG_02xx videos labeled incorrect whose frames vote CORRECT 87–100%, and
+  correct-labeled 0181/0182/0183/0074(1) voting incorrect 64–83%
+  (checked values: incorrect-labeled IMG_0207 has a PERFECT body line
+  f1=178, f2=0.008; IMG_0210's features are even deeper in the bad range
+  f1=145 than the incorrect cluster mean 164 — bad region too sparse)
+- Lunge: 6/80 (22.0%); Plank: 3/72 (16.4%), incl. correct-labeled IMG_0039
+  (85% disagree, features f1=164/f2=0.068 mid-cluster)
+- Pull-Up: 5/67 (18.9%); Push-Up: 11/71 (16.2%) — but only 1-row videos
+  mostly; Squat: 2/39 (5.1%) — cleanest
+- k-increase does NOT fix the failing probes (probe_k.py: Side Plank good-mean
+  stays 20/21 bad at k=21; Lunge 24/31 bad at k=31).
+Conclusion: overlapping/undersampled neighborhoods + some genuinely dubious
+video labels (candidates for relabel/drop); not fixable by k or app code.
+
+### Decision pending: how to handle the 33 conflicted videos
+Options: (a) relabel/drop only high-confidence conflicts (>=80% frames
+disagree + centroid disagrees) -> retrain/validate/re-export; (b) produce a
+trainer-review report only; (c) record better data. Do not change anything
+until user chooses.
+
+### Relabel TRIAL results (user chose the trial run)
+Tooling added in DATASET_FLEXWELL/dataset (all untracked):
+- audit_label_mixing.py (leave-one-video-out frame-vote audit)
+- denoise_labels.py (candidates: features_relabeled.csv / features_dropped.csv
+  + denoise_report.csv; threshold via DENOISE_THRESHOLD env, default 0.80)
+- probe_k.py (k-sweep), probe_trial.py (trial-vs-shipped model probes),
+  compare_models.py (dataset<->assets diff)
+- train_and_validate.py / export_for_app.py now accept optional
+  input/output path argv (defaults unchanged).
+
+Conservative relabel (24 videos flipped, >=80% frames + centroid disagree):
+| Exercise   | k=5 grouped CV before -> after |
+|------------|-------------------------------|
+| Lunge      | 0.85 -> 0.86 |
+| Plank      | 0.80 -> 0.81 |
+| Push-Up    | 0.86 -> 0.95 |
+| Side Plank | 0.78 -> 0.80 |
+| Squat      | 0.93 -> 0.98 |
+| Pull-Up    | 0.78 -> 0.82 |
+
+Probes (trial vs shipped model):
+- FIXED: Push-Up good mean [60,173] 2/5 bad -> 0/5 bad (correct), with the
+  bad bottom probe unchanged (5/5 bad). No probe regressed.
+- NOT FIXED (still inverted): Plank good [168.2,.0486,.043] 4/5 bad,
+  Side Plank good [168.2,.0486,.12] 4/5 bad,
+  Lunge good mean 5/5 bad. Those neighbourhoods are poisoned by
+  moderately-conflicted videos (40-60% frame disagreement) that the
+  conservative rule deliberately leaves alone.
+- Aggressive variant (0.5 threshold, 22 further flips) made probes WORSE
+  (Side Plank good 4/5 -> 5/5, Push-Up good 2/5) -> rejected; conservative
+  variant is the recommended candidate.
+
+Conclusion: relabeling whole videos is only a partial remedy. The remaining
+inversions would need frame-level label refinement or new/better features --
+not safely automatable without trainer review of the actual videos.
+
 ## Remaining work (the "other" — deferred)
 1. ML pipeline re-validation: Plank/Side Plank/Lunge label audit, Pull-Up
    oodRadius widening; re-extract → re-export → re-validate

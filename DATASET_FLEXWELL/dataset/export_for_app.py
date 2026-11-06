@@ -22,7 +22,14 @@ import csv
 import json
 import math
 import os
+import sys
 from pathlib import Path
+
+# Optional overrides (2026-11-06 label-denoise trial):
+#   python export_for_app.py [input.csv] [output.json]
+# Defaults keep the original behaviour: features.csv -> knn_training_data.json.
+INPUT_CSV = Path(sys.argv[1]) if len(sys.argv) > 1 else DATASET_DIR / "features.csv"
+OUTPUT_JSON = Path(sys.argv[2]) if len(sys.argv) > 2 else DATASET_DIR / "knn_training_data.json"
 
 # Every feature_N column that may exist. Lunge emits 5, Plank/Side Plank 3,
 # the rest 2 -- so this must cover the widest exercise, not a fixed 3.
@@ -174,7 +181,7 @@ def _live_video_dists(exercise, model, max_videos=4, sample_every=5, max_frames=
     return dists
 
 
-def load_rows(path=DATASET_DIR / "features.csv"):
+def load_rows(path=INPUT_CSV):
     with open(path, newline="") as f:
         return list(csv.DictReader(f))
 
@@ -312,7 +319,7 @@ def main():
         if radius is not None:
             output[exercise]["oodRadius"] = round(max(radius, 1e-3), 4)
 
-    output_path = DATASET_DIR / "knn_training_data.json"
+    output_path = OUTPUT_JSON
     with open(output_path, "w") as f:
         json.dump(output, f, indent=2)
 

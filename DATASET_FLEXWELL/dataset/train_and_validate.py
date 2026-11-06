@@ -21,6 +21,8 @@ video's frames appear in both train and test at once. This requires the
 updated extract_features.py that writes a video_id column.
 """
 
+import sys
+
 import pandas as pd
 from sklearn.model_selection import GroupKFold, GroupShuffleSplit, cross_val_score
 from sklearn.neighbors import KNeighborsClassifier
@@ -28,7 +30,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
 from sklearn.metrics import classification_report
 
-df = pd.read_csv("features.csv")
+# Optional candidate CSV: python train_and_validate.py features_relabeled.csv
+DATASET_CSV = sys.argv[1] if len(sys.argv) > 1 else "features.csv"
+print(f"=== validating {DATASET_CSV} ===")
+df = pd.read_csv(DATASET_CSV)
 
 if "video_id" not in df.columns:
     raise SystemExit(
