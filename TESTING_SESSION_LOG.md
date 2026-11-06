@@ -106,8 +106,8 @@ Also: Pull-Up oodRadius is only 0.59 z-units (Squat 1.75, Lunge 8.0) — very ti
 - lib/knn_classifier.dart (+getter) — COMMITTED
 - test/integration_pipeline_test.dart (Lunge dims 2→5) — COMMITTED
   (both pushed as a5d78e7 on master)
-- test/simulation_test.dart (rewritten harness) — pending commit
-- test/predict_probe.py (KNN probe tool) — pending commit
-- TESTING_SESSION_LOG.md (this file) — pending commit
+- test/simulation_test.dart (rewritten harness) — COMMITTED & PUSHED (081daf9)
+- test/predict_probe.py (KNN probe tool) — COMMITTED & PUSHED (081daf9)
+- TESTING_SESSION_LOG.md (this file) — COMMITTED & PUSHED (081daf9)
 - test_original_backup\ (old 3-file suite before fast-forward) — untracked helper
 - sim_out.txt (last sim run output) — untracked, disposable
