@@ -16,6 +16,10 @@ class KnnClassifier {
 
   bool get isLoaded => _loaded;
 
+  /// Read-only snapshot of the loaded models, for tests and diagnostics.
+  Map<String, FlatKnnModel> get models =>
+      Map.unmodifiable(Map<String, FlatKnnModel>.from(_models));
+
   bool isReadyFor(String exercise) {
     final model = _models[exercise];
     return _loaded && model != null && model.count > 0;

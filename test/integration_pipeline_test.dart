@@ -64,7 +64,7 @@ void main() {
 
       expect(models['Squat']!.dims, equals(2));
       expect(models['Push-Up']!.dims, equals(2));
-      expect(models['Lunge']!.dims, equals(2)); // Reduced from 5
+      expect(models['Lunge']!.dims, equals(5)); // kneeAngle, torsoLean, shinAngle, hipAnkleGap, thighAngle
       expect(models['Plank']!.dims, equals(3));
       expect(models['Side Plank']!.dims, equals(3));
       expect(models['Pull-Up']!.dims, equals(2)); // Upgraded from 1-D
