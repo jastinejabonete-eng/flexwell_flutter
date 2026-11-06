@@ -1,0 +1,25 @@
+exercise,video,old_label,proposed_label,action,frame_disagree
+Lunge,Lunge/incorrect/Copy of IMG_2688.MOV,incorrect,correct,flip,0.8604651162790697
+Plank,Plank/correct/Copy of IMG_0039.mov,correct,incorrect,flip,0.85
+Pull-Up,Copy of IMG_9818.mov,correct,incorrect,flip,1.0
+Pull-Up,Copy of IMG_9822.mov,correct,incorrect,flip,1.0
+Pull-Up,batch20261012_IMG_3353.mp4,correct,incorrect,flip,1.0
+Push-Up,Push-Up/correct/IMG_0452.mov,correct,incorrect,flip,1.0
+Push-Up,Push-Up/correct/IMG_3296.MOV,correct,incorrect,flip,1.0
+Push-Up,Push-Up/incorrect/IMG_0467.mov,incorrect,correct,flip,1.0
+Push-Up,Push-Up/incorrect/IMG_0468.mov,incorrect,correct,flip,1.0
+Push-Up,Push-Up/incorrect/IMG_0471.mov,incorrect,correct,flip,1.0
+Push-Up,Push-Up/incorrect/IMG_0472.mov,incorrect,correct,flip,1.0
+Push-Up,Push-Up/incorrect/IMG_0474.mov,incorrect,correct,flip,1.0
+Push-Up,Push-Up/incorrect/IMG_3308.MOV,incorrect,correct,flip,1.0
+Push-Up,Push-Up/incorrect/IMG_3312.MOV,incorrect,correct,flip,1.0
+Push-Up,Push-Up/incorrect/IMG_3315.MOV,incorrect,correct,flip,1.0
+Push-Up,Push-Up/incorrect/IMG_4490.MOV,incorrect,correct,flip,1.0
+Side Plank,Side Plank/correct/Copy of IMG_0183.mov,correct,incorrect,flip,0.8333333333333334
+Side Plank,Side Plank/incorrect/Copy of IMG_0203.mov,incorrect,correct,flip,0.875
+Side Plank,Side Plank/incorrect/Copy of IMG_0206.mov,incorrect,correct,flip,0.8125
+Side Plank,Side Plank/incorrect/Copy of IMG_0207.mov,incorrect,correct,flip,1.0
+Side Plank,Side Plank/incorrect/Copy of IMG_0210.mov,incorrect,correct,flip,1.0
+Side Plank,Side Plank/incorrect/Copy of IMG_0211.mov,incorrect,correct,flip,0.875
+Squat,Squat/incorrect/IMG_0377.mov,incorrect,correct,flip,1.0
+Squat,Squat/incorrect/batch20261012_IMG_3366.MOV,incorrect,correct,flip,1.0

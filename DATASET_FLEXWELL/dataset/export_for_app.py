@@ -25,6 +25,8 @@ import os
 import sys
 from pathlib import Path
 
+DATASET_DIR = Path(__file__).resolve().parent
+
 # Optional overrides (2026-11-06 label-denoise trial):
 #   python export_for_app.py [input.csv] [output.json]
 # Defaults keep the original behaviour: features.csv -> knn_training_data.json.
@@ -36,7 +38,6 @@ OUTPUT_JSON = Path(sys.argv[2]) if len(sys.argv) > 2 else DATASET_DIR / "knn_tra
 # example_features() keeps only the columns actually present and non-empty for
 # each row, so shorter exercises are unaffected.
 FEATURE_COLS = ["feature_1", "feature_2", "feature_3", "feature_4", "feature_5"]
-DATASET_DIR = Path(__file__).resolve().parent
 
 
 def _live_video_dists(exercise, model, max_videos=4, sample_every=5, max_frames=200):

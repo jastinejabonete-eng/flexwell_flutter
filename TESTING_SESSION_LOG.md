@@ -170,6 +170,20 @@ Conclusion: relabeling whole videos is only a partial remedy. The remaining
 inversions would need frame-level label refinement or new/better features --
 not safely automatable without trainer review of the actual videos.
 
+### Adoption (user approved) -- RELABEL MODEL SHIPPED
+- features.csv replaced with the relabeled candidate (original preserved at
+  DATASET_FLEXWELL/dataset/features_before_relabel.csv).
+- Re-ran extract->export (export_for_app.py, live-video calibration ran) and
+  copied the new knn_training_data.json to assets/ (compare_models.py: identical).
+- Verification after adoption: python probe (Push-Up good mean now 0/5 bad;
+  no other probe regressed) + flutter analyze 0 issues + flutter test 65/65 +
+  simulation test (Squat good/bad, Push-Up good, Pull-Up good/partial all
+  correct as before).
+- Known remaining limitation (unchanged by this): Plank/Side Plank/Lunge
+  good-form at cluster means still vote incorrect (frame-level label mixing);
+  real fix needs frame-level labels or better features + trainer review.
+- Squat oodRadius updated by the re-export (1.7524 -> 2.1235, live-calibrated).
+
 ## Remaining work (the "other" — deferred)
 1. ML pipeline re-validation: Plank/Side Plank/Lunge label audit, Pull-Up
    oodRadius widening; re-extract → re-export → re-validate

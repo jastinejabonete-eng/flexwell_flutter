@@ -29,7 +29,6 @@ import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'package:flexwell_flutter/pose_analyzer.dart';
 import 'package:flexwell_flutter/knn_core.dart';
 import 'package:flexwell_flutter/knn_classifier.dart';
-import 'package:flexwell_flutter/form_smoother.dart';
 
 double _r(double deg) => deg * math.pi / 180.0;
 
@@ -80,20 +79,6 @@ List<double> _twoLink(
     root[0] + ux * a + uy * h * sign,
     root[1] + uy * a - ux * h * sign,
   ];
-}
-
-double _dist(List<double> a, List<double> b) {
-  final dx = a[0] - b[0], dy = a[1] - b[1];
-  return math.sqrt(dx * dx + dy * dy);
-}
-
-double _angleDeg(List<double> a, List<double> b, List<double> c) {
-  final v1x = a[0] - b[0], v1y = a[1] - b[1];
-  final v2x = c[0] - b[0], v2y = c[1] - b[1];
-  final dot = v1x * v2x + v1y * v2y;
-  final m = math.sqrt(v1x * v1x + v1y * v1y) * math.sqrt(v2x * v2x + v2y * v2y);
-  if (m < 1e-9) return 180.0;
-  return math.acos((dot / m).clamp(-1.0, 1.0)) * 180 / math.pi;
 }
 
 // ---------------------------------------------------------------------------
@@ -229,7 +214,7 @@ const _pupWristL = [66.0, 382.0];
 const _pupArm = 45.0; // each arm segment; 90 = fully straight shoulder-wrist
 const _pupBodyY = 300.0; // top-plank height of shoulder/hip/ankle
 // Hip sags for bad form (incorrect body-line mean ~160°); stays near line for good.
-final _pupHipSag = (bool goodForm) => goodForm ? 8.0 : 46.0;
+double _pupHipSag(bool goodForm) => goodForm ? 8.0 : 46.0;
 double _pushUpDip(bool goodForm) {
   // Shoulder drop so the MEASURED elbow angle reaches its target at bottom
   // (good: 61° = training good mean 60.9°; bad: 88° -> also crosses the
