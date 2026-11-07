@@ -467,8 +467,21 @@ String _color(AnalysisResult r) {
 }
 
 /// Test with REAL KnnClassifier loaded from assets.
+/// Verdict evidence collected for one simulated trace.
+class SimOutcome {
+  SimOutcome(this.name);
+  final String name;
+  /// isCorrect verdicts of every EX-phase frame that produced one
+  /// (null/neutral frames skipped). Order preserved.
+  final List<bool> verdicts = [];
+  bool sawUnfamiliar = false;
+  bool get sawCorrect => verdicts.contains(true);
+  bool get sawIncorrect => verdicts.contains(false);
+}
+
 /// This is the gold-standard simulation.
-Future<void> runRealSimulation() async {
+/// Returns the per-trace outcomes so tests can assert real verdicts.
+Future<Map<String, SimOutcome>> runRealSimulation() async {
   print('\n');
   print('████████████████████████████████████████████████████████████');
   print('█  FLEXWELL FULL-PIPELINE SIMULATION (REAL KNN MODEL)      █');
@@ -493,8 +506,12 @@ Future<void> runRealSimulation() async {
     ('Lunge (shallow/bad)', <Pose>[], lungeSequence(depth: 0.8, goodForm: false)),
   ];
 
+  final outcomes = <String, SimOutcome>{};
+
   for (var (name, cal, ex) in exercises) {
     final key = exerciseKeyFor(name);
+    final outcome = SimOutcome(name);
+    outcomes[name] = outcome;
     DateTime clock = DateTime.utc(2025);
     DateTime advanceClock() {
       clock = clock.add(const Duration(milliseconds: 100));
@@ -521,7 +538,13 @@ Future<void> runRealSimulation() async {
 
     for (final pose in ex) {
       final r = await analyzer.analyze(key, pose);
+      if (r.message.contains('Unfamiliar')) outcome.sawUnfamiliar = true;
       if (r.message != lastMsg) {
+        // USER-VISIBLE verdict only: a message change with reliable landmarks
+        // (the UI renders unreliable landmarks as neutral/orange regardless of
+        // the bool -- e.g. the neutral 'Hold at the bottom' state carries
+        // isCorrect=true with landmarksReliable=false).
+        if (r.landmarksReliable) outcome.verdicts.add(r.isCorrect);
         print('  ${_color(r)} [Ex ] ${r.message} (signal=${r.repSignal.toStringAsFixed(2)})');
         lastMsg = r.message;
       }
@@ -533,6 +556,7 @@ Future<void> runRealSimulation() async {
   print('\n████████████████████████████████████████████████████████████');
   print('█  SIMULATION COMPLETE                                      █');
   print('████████████████████████████████████████████████████████████\n');
+  return outcomes;
 }
 
 void main() {
@@ -540,7 +564,64 @@ void main() {
 
   group('FlexWell Full-Pipeline Simulation', () {
     test('Run complete simulation with real KNN model', () async {
-      await runRealSimulation();
+      final outcomes = await runRealSimulation();
+      // If a model/data change fails one of these, re-check the probes
+      // (python test/predict_probe.py) before editing the expectation.
+      void byName(String n) => expect(outcomes[n], isNotNull, reason: 'trace $n missing');
+
+      // ---- Squat: deep reps count as good, shallow commits incorrect ----
+      byName('Squat');
+      byName('Squat (shallow/bad)');
+      expect(outcomes['Squat']!.sawCorrect, isTrue,
+          reason: 'deep squat must be judged correct');
+      expect(outcomes['Squat (shallow/bad)']!.sawIncorrect, isTrue,
+          reason: 'shallow squat must be judged incorrect');
+      expect(outcomes['Squat (shallow/bad)']!.sawCorrect, isFalse,
+          reason: 'shallow squat must never count as a good rep');
+
+      // ---- Push-Up: good form commits correct; shallow never engages ----
+      byName('Push-Up');
+      byName('Push-Up (shallow/bad)');
+      expect(outcomes['Push-Up']!.sawCorrect, isTrue,
+          reason: 'good push-up must be judged correct');
+      expect(outcomes['Push-Up (shallow/bad)']!.sawCorrect, isFalse,
+          reason: 'shallow push-up must never count as a good rep');
+
+      // ---- Pull-Up: good pull counts, no OOD; partial is rejected ----
+      byName('Pull-Up');
+      byName('Pull-Up (partial/bad)');
+      expect(outcomes['Pull-Up']!.sawCorrect, isTrue,
+          reason: 'good pull-up must be judged correct');
+      expect(outcomes['Pull-Up']!.sawUnfamiliar, isFalse,
+          reason: 'good pull-up must not be flagged out-of-distribution');
+      expect(outcomes['Pull-Up (partial/bad)']!.sawIncorrect, isTrue,
+          reason: 'partial pull must be judged incorrect');
+      expect(outcomes['Pull-Up (partial/bad)']!.sawCorrect, isFalse,
+          reason: 'partial pull must never count as a good rep');
+
+      // ---- Holds: sagging must be rejected ----
+      byName('Plank (sagging/bad)');
+      byName('Side Plank (sagging/bad)');
+      expect(outcomes['Plank (sagging/bad)']!.sawIncorrect, isTrue,
+          reason: 'sagging plank must be judged incorrect');
+      expect(outcomes['Side Plank (sagging/bad)']!.sawIncorrect, isTrue,
+          reason: 'sagging side plank must be judged incorrect');
+
+      // ---- KNOWN DATA REGRESSIONS (2026-11-06/07) ------------------------
+      // Good-form planks/lunge at the training-cluster means still commit
+      // 'incorrect': frame-level label mixing in the source videos cannot be
+      // fixed by whole-video relabeling (see TESTING_SESSION_LOG.md).
+      // These asserts PIN the current behavior: if the dataset is ever fixed,
+      // they fail loudly and should be flipped to sawCorrect expectations.
+      byName('Plank (good)');
+      byName('Side Plank (good)');
+      byName('Lunge (good)');
+      expect(outcomes['Plank (good)']!.sawCorrect, isFalse,
+          reason: 'KNOWN DATA REGRESSION: good plank currently judged incorrect');
+      expect(outcomes['Side Plank (good)']!.sawCorrect, isFalse,
+          reason: 'KNOWN DATA REGRESSION: good side plank currently judged incorrect');
+      expect(outcomes['Lunge (good)']!.sawCorrect, isFalse,
+          reason: 'KNOWN DATA REGRESSION: good lunge currently judged incorrect');
     }, timeout: const Timeout(Duration(minutes: 2)));
   });
 }

@@ -1,7 +1,14 @@
 # TEST RESULTS — FlexWell
 
-**Refreshed:** 2026-11-06 (verification session following the 2026-11-04 audit)
-**Status:** ✅ All automated tests pass · analyze clean · app builds · model improvements shipped
+**Refreshed:** 2026-11-06 & 2026-11-07 (verification + label-denoise + trainer review)
+**Status:** ✅ All automated tests pass · analyze clean · app builds ·
+**⚠️ label cleanup MIXED — no measured app improvement yet; known regressions remain**
+
+> Honest framing (2026-11-07): the relabel/revert cycle fixed some mislabeled
+> videos and removed one regression (severe side-plank sag briefly trained as
+> correct). Model-level CV numbers moved, but NO app-level improvement has been
+> demonstrated yet — the camera pipeline needs device testing. Good-form Plank
+> / Side Plank / Lunge are still misjudged (data limitation, see 7.1).
 
 > This document was fully rewritten after the 2026-11-06 verification + label-denoise
 > session. The previous version's numbers (79 tests, 13 analyze warnings, Push-Up
@@ -79,23 +86,35 @@ classify correctly at their cluster means.
 
 ---
 
-## 4. ML MODEL (adopted relabel model, 2026-11-06)
+## 4. ML MODEL (label-cleanup cycle, 2026-11-06/07 — MIXED result)
 
 24 conflicted videos (≥80% leave-one-video-out frame disagreement + centroid
-vote against the video label) were relabeled; every flip documented in
-`DATASET_FLEXWELL/dataset/denoise_report.csv`; original data preserved as
-`features_before_relabel.csv`. Model re-exported and shipped to `assets/`
-(dataset json ⇄ asset json byte-identical).
+vote against the video label) were relabeled on 2026-11-06. On 2026-11-07 a
+trainer review REVERTED 3 flips (severe side-plank sag IMG_0210 must train as
+incorrect; Plank IMG_0039 must stay correct; Push-Up IMG_3296 is
+straight-body/shallow — plausible good form) and KEPT the Pull-Up IMG_3353
+flip (its rows: disp 0.0..+0.14 with elbows 23–38° = no pull performed;
+'correct' there contradicts the correct cluster by construction).
+Every flip documented in `DATASET_FLEXWELL/dataset/denoise_report.csv`;
+original data preserved as `features_before_relabel.csv`.
 
-### 4.1 Grouped CV accuracy (k=5, by video) — before → after relabel
-| Exercise | Rows | Videos | CV before | CV after |
-|----------|------|--------|-----------|----------|
-| Lunge | 5,039 | 80 | 0.85 | 0.86 |
-| Plank | 2,273 | 72 | 0.80 | 0.81 |
-| Push-Up | 79 | 71 | 0.86 | **0.95** |
-| Side Plank | 3,578 | 115 | 0.78 | 0.80 |
-| Squat | 143 | 39 | 0.93 | **0.98** |
-| Pull-Up | 157 | 67 | 0.78 | **0.82** |
+**App-level verdict: CONNECTED BUT UNDEMONSTRATED.** The simulation verdicts
+did not change with any adopted model version (Squat/Push-Up/Pull-Up were
+already correct after the harness rewrite; the harness fixes, not the
+relabels, changed them). No device testing yet.
+
+### 4.1 Grouped CV accuracy (k=5, by video) — final (post-correction)
+| Exercise | Rows | Videos | CV |
+|----------|------|--------|----|
+| Lunge | 5,039 | 80 | 0.86 |
+| Plank | 2,273 | 72 | 0.80 |
+| Push-Up | 79 | 71 | 0.96 |
+| Side Plank | 3,578 | 115 | 0.80 |
+| Squat | 143 | 39 | 0.98 |
+| Pull-Up | 157 | 67 | 0.82 |
+
+(vs pre-relabel baselines .85/.80/.86/.78/.93/.78 — a mixed cleanup that
+helps model numbers; app impact unverified.)
 
 ### 4.2 Holdout report (k=5, videos never seen in training, relabel model)
 Lunge 0.86 · Plank 0.84 · Push-Up ~0.80–0.95 · Side Plank 0.81 · Squat 0.97 ·
@@ -103,12 +122,12 @@ Pull-Up 0.69 (recall on good still limited by small data — see note).
 (Exact per-class reports: run `python train_and_validate.py` in
 `DATASET_FLEXWELL/dataset`; numbers move a few points with the split.)
 
-### 4.3 Probe verification of the shipped model (`probe_trial.py`-style)
-- Push-Up good mean [60, 173]: 0/5 bad — ✅ was 2/5 borderline
-- Squat/pull-Up/bad-form probes: unchanged (0 or 5/5, decisive)
-- Plank / Side Plank / Lunge good-mean: still 4–5/5 bad — the remaining
-  known limitation (frame-level label mixing; needs frame-level refinement
-  or better features with trainer review)
+### 4.3 Probe verification of the shipped model
+- Push-Up good mean [60, 173]: 0/5 bad — ✅ (was 2/5 borderline) — model-level only
+- Squat / Pull-Up / bad-form probes: unchanged (decisive)
+- Plank / Side Plank / Lunge good-mean: still 4–5/5 bad — **known data
+  regression** (frame-level label mixing; whole-video relabeling cannot reach
+  it; the aggressive variant tested made it worse)
 
 ---
 

@@ -170,19 +170,62 @@ Conclusion: relabeling whole videos is only a partial remedy. The remaining
 inversions would need frame-level label refinement or new/better features --
 not safely automatable without trainer review of the actual videos.
 
-### Adoption (user approved) -- RELABEL MODEL SHIPPED
-- features.csv replaced with the relabeled candidate (original preserved at
-  DATASET_FLEXWELL/dataset/features_before_relabel.csv).
-- Re-ran extract->export (export_for_app.py, live-video calibration ran) and
-  copied the new knn_training_data.json to assets/ (compare_models.py: identical).
-- Verification after adoption: python probe (Push-Up good mean now 0/5 bad;
-  no other probe regressed) + flutter analyze 0 issues + flutter test 65/65 +
-  simulation test (Squat good/bad, Push-Up good, Pull-Up good/partial all
-  correct as before).
-- Known remaining limitation (unchanged by this): Plank/Side Plank/Lunge
-  good-form at cluster means still vote incorrect (frame-level label mixing);
-  real fix needs frame-level labels or better features + trainer review.
-- Squat oodRadius updated by the re-export (1.7524 -> 2.1235, live-calibrated).
+### Adoption (2026-11-06) and CORRECTIONS (2026-11-07 trainer review)
+
+**Honest summary (2026-11-07): label cleanup is MIXED. There is no measured
+app improvement; only model-level CV numbers improved. Known regressions and
+partial fixes coexist.**
+
+What was adopted on 2026-11-06: conservative relabel (24 videos), re-export,
+asset copy. App-level verification showed the simulation verdicts UNCHANGED
+(value of the relabel at app level was NOT demonstrated).
+
+2026-11-07 trainer review of the flipped videos (denoise_report.csv):
+- REVERTED Side Plank Copy of IMG_0210.mov back to 'incorrect': it is severe
+  hip sag that the half-relabel had trained as CORRECT (regression removed).
+- REVERTED Plank Copy of IMG_0039.mov back to 'correct': flipping it pushed
+  Plank further toward flagging good form as bad.
+- Push-Up IMG_3296.MOV reverted to 'correct' after review: single row
+  [elbow 76°, body line 178.9°] = perfectly straight body + moderate depth,
+  ambiguous features; neighbours post-cleanup are 4/4 correct. Keeping it as
+  'incorrect' trains good-shallow form as bad. (CV with revert .96 vs .95.)
+- Pull-Up batch20261012_IMG_3353.mp4 flip KEPT after review: its 4 rows carry
+  disp 0.0..+0.14 (hips at/below shoulders = no pull performed) with
+  elbows 23-38°; as 'correct' data these contradict the correct cluster
+  (disp mean -0.58) and keeping the flip lifts Pull-Up CV .78 -> .82.
+- The other ~20 flips kept (fix real label errors).
+- features.csv now = post-correction "variant C"; original data still
+  preserved at features_before_relabel.csv; variant CSVs + review script
+  (apply_trainer_fixes.py, review_contested_flips.py) left in the dataset dir
+  for audit.
+
+Verification after corrections (unit_test_assets cleared before runs):
+- train_and_validate variant C, k=5 grouped CV: Lunge .86, Plank .80,
+  Push-Up .96, Side Plank .80, Squat .98, Pull-Up .82.
+- export -> asset copy (compare_models.py identical)
+- flutter analyze 0 issues; flutter test 65/65 pass, INCLUDING new sim
+  assertions (see below).
+
+### Simulation assertions added (2026-11-07)
+test/simulation_test.dart now ASSERTS instead of just printing:
+- Squat good -> correct committed; Squat shallow -> incorrect committed,
+  never correct.
+- Push-Up good -> correct; Push-Up shallow -> never counted correct.
+- Pull-Up good -> correct AND not OOD; partial -> incorrect.
+- Plank sagging / Side Plank sagging -> incorrect.
+- KNOWN-DATA-REGRESSION pins (asserted current behavior with loud reasons):
+  good Plank / Side Plank / Lunge currently judged incorrect. If the dataset
+  is ever fixed these fail loudly and must be flipped to sawCorrect asserts.
+Verdict semantics: collected ONLY from user-visible message changes with
+reliable landmarks (unreliable/neutural frames render orange in the UI and
+must not read as verdicts).
+
+### Cleanup command (use before any model-verification run)
+Before re-running model-verification flows after changing
+assets/knn_training_data.json, clear flutter's cached test assets:
+  Remove-Item build\\unit_test_assets -Recurse -Force   (PowerShell)
+  # or: rm -rf build/unit_test_assets (bash)
+flutter test repopulates it on the next run.
 
 ## Phase 3: documentation refresh + build smoke (2026-11-06, continued)
 
