@@ -227,6 +227,19 @@ assets/knn_training_data.json, clear flutter's cached test assets:
   # or: rm -rf build/unit_test_assets (bash)
 flutter test repopulates it on the next run.
 
+### Device-testing handoff (user, 2026-11-07)
+User is taking over for on-device testing. Assets to use:
+- APK: build/app/outputs/flutter-apk/app-debug.apk (rebuilt 2026-11-07 AFTER
+  the variant-C corrections; contains the corrected model).
+- Protocol: device_check_protocol.md (Squat/Push-Up engage=0.12, dwell=0.30
+  thresholds; log peak displacement per rep).
+- Watch for: (a) Push-Up reps at disp < 0.12 give NO feedback (silent dead
+  zone, open question), (b) good Plank/Side Plank/Lunge will still often be
+  judged incorrect — that is the documented data limitation, not a new bug,
+  (c) "Unfamiliar form" frequency, especially Pull-Up (oodRadius 0.59).
+- Report results in the session log; follow-ups ready: hold-window verdict
+  smoothing, CI setup, plank feature exploration, frame-level relabel.
+
 ## Phase 3: documentation refresh + build smoke (2026-11-06, continued)
 
 - `TEST_RESULTS.md` fully rewritten: now reflects reality (65/65 tests,
